@@ -1,0 +1,7 @@
+# Keyboard dependency manifest. Does not import the receiver's Zephyr manifest.
+manifest:
+  projects:
+    - name: prospector-zmk-module
+      url: https://github.com/t-ogura/prospector-zmk-module
+      revision: 72a71aeea816eb0f86ffc5b108b267076ce5f0af # v2.2.3
+      path: modules/prospector-zmk-module

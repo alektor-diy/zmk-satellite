@@ -4,7 +4,13 @@ This application was implemented independently. It is not an official ZMK,
 Prospector, Seeed, or Zephyr product. No Prospector UI code, images, fonts or
 hardware drawings are bundled. No ZMK application code is linked into the scanner.
 
-## Reference projects (not firmware dependencies)
+## Reference projects and keyboard-only dependency
+
+The standalone receiver does not link Prospector's sender. The keyboard module
+in `module/` intentionally compiles the pinned upstream MIT sender through a
+small adapter. It preserves its copyright in a generated source and makes only
+the documented init, side selection, optional interval and idle-name fixes.
+It does not use the former iOra-specific event-driven sender.
 
 - `carrefinho/prospector`, commit
   `19ab80f9e656592b9d0319ecfb9c35bf9c5e10dd`, CERN-OHL-P v2.

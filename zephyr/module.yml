@@ -1,0 +1,4 @@
+name: zmk-satellite
+build:
+  cmake: module
+  kconfig: module/Kconfig

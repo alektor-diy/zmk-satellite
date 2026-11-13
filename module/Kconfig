@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MIT
+menuconfig ZMK_SATELLITE
+    bool "Send keyboard status to ZMK Satellite"
+    depends on ZMK_BLE
+    select ZMK_STATUS_ADVERTISEMENT if ZMK_SPLIT_ROLE_CENTRAL || !ZMK_SPLIT
+    select ZMK_SPLIT_BLE_CENTRAL_BATTERY_LEVEL_FETCHING if ZMK_SPLIT_BLE && ZMK_SPLIT_ROLE_CENTRAL
+    imply BT_BAS if ZMK_SPLIT && !ZMK_SPLIT_ROLE_CENTRAL
+    help
+      Enable in a shared keyboard .conf. Only the central or standalone
+      keyboard advertises; split peripherals retain battery reporting.
+      Requires the module/west.yml import to fetch Prospector definitions.
+
+if ZMK_SATELLITE && (ZMK_SPLIT_ROLE_CENTRAL || !ZMK_SPLIT)
+
+config ZMK_SATELLITE_ADV_INTERVAL_MS
+    int "Status radio advertising interval (milliseconds)"
+    range 100 10000
+    default 100
+    help
+      100 preserves Prospector's default 100-150ms continuous status radio
+      advertising. Other values set the own non-connectable status interval
+      to this value (plus BLE random delay). They do not change ZMK's PC
+      connection advertising or Prospector's split-discovery burst interval.
+      This is NOT the 200ms/30s payload refresh interval.
+
+config ZMK_SATELLITE_CENTRAL_SIDE
+    string "Physical side of split central: AUTO, LEFT, RIGHT or AUX"
+    default "AUTO"
+    depends on ZMK_SPLIT_ROLE_CENTRAL
+    help
+      AUTO uses the selected shield/board name's left/right suffix.
+      Unrecognised layouts retain Prospector's configured central side;
+      specify LEFT/RIGHT/AUX only if the automatic choice is inappropriate.
+
+endif

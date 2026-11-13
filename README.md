@@ -4,6 +4,8 @@ XIAO nRF52840 と 1.3インチ 240×240 ST7789 SPI LCD を使う、ZMKキーボ�
 
 **試作版 v0.1.0。実機未検証。** ビルド結果は [検証記録](docs/VALIDATION.md) を参照してください。最初は付属の表示テスト用UF2から確認してください。
 
+**キーボード側は [モジュールを追加してONにする](module/README.md) だけで通常構成を使えます。** このリポジトリは、独立した表示器FWと、既存ZMK向けの導入用モジュールの両方を提供します。
+
 初めて導入する方は **[導入ガイド](docs/INSTALL.md)** から進めてください。既存キーボードのどのファイルへ何を追加するか、左右分割の例、ビルドと書き込み、元へ戻す方法を順番に説明しています。
 
 ## 実装した機能
@@ -46,17 +48,29 @@ FWはUSBホスト／DTRを待ちません。USB充電器でも表示を開始し
 
 ## キーボード側の準備
 
-標準ZMKのままでは状態情報が届かないため、**普段使っている自分のキーボード設定リポジトリ**へ送信機能を追加します。Satelliteとキーボードは、それぞれ別のFWです。
+普段使っているZMK設定の `config/west.yml` の `manifest.projects` に追加します。
 
-1. 現在動くキーボードFWと設定を保存します。
-2. キーボードの `config/west.yml` にt-oguraの `prospector-zmk-module` v2.2.3を追加します。既存のZMKや他のモジュールは残します。
-3. 適用される `.conf` に状態広告を有効にする設定を追加します。分割機はcentral（PCへ接続する側）の左右と、もう片側からの残量取得も設定します。
-4. いつものGitHub Actionsなどでキーボード用FWを作り直し、対応する側へ書き込みます。
-5. SatelliteのBLE受信版、続いて統合表示版で実際の情報を確認します。
+```yaml
+    - name: zmk-satellite
+      url: https://github.com/alektor-diy/zmk-satellite
+      revision: main
+      path: modules/zmk-satellite
+      import: module/west.yml
+```
 
-**編集位置が分かるYAML例、左右それぞれの設定例、画面に出る結果、失敗時の対処は [導入ガイド](docs/INSTALL.md) にまとめています。** 共通 `.conf` と片側用 `.conf` の選択はZMKのバージョンで違うため、追加先を確認してから進めてください。キーマップ自体の変更や、通常の導入でのペアリング消去は不要です。
+適用されるキーボードの共通 `.conf` に追加します。
 
-ユーザーのキーボード設定はまだ取得・変更していません。個別機種への書き込み・相互運用は未検証です。
+```conf
+CONFIG_ZMK_SATELLITE=y
+```
+
+あとは通常どおりキーボード用FWをビルドして書き込みます。通常の左右分割なら共通ファイル1か所でよく、左右別のCコードや広告設定を追加する必要はありません。標準動作はProspectorの100〜150ms周期の連続広告です。利用したい人が電池消費との兼ね合いでONにする追加機能としています。
+
+任意で `CONFIG_ZMK_SATELLITE_ADV_INTERVAL_MS=1000` のように実際の独自状態広告の間隔を指定できます。表示・対象選択・受信タイムアウトなどはSatellite側の設定です。特殊な中央側配置、バッテリーを明示的に無効化した機種、非公開リポジトリのCI認証については [モジュールの説明](module/README.md) を参照してください。
+
+**受信器用のルートwest.ymlをキーボードへimportしないでください。** `module/west.yml` はProspectorの依存だけを追加し、キーボードのZMK／Zephyr版を置き換えません。現在リポジトリが非公開のため、別リポジトリのActionsからの取得には読み取り認証が必要です。公開範囲はこの変更では変えていません。
+
+全体の順番は [導入ガイド](docs/INSTALL.md)、モジュールの確認結果は [MODULE_VALIDATION.md](docs/MODULE_VALIDATION.md) にあります。
 
 ## ソースからビルド
 
@@ -120,7 +134,7 @@ Prospector／Prospector Scannerを参考にしています。今回照合した�
 | BLE広告の形式 | t-ogura版Prospector moduleを参照して互換実装 |
 | LCDの初期化値 | ZephyrのST7789 overlayから再利用、Apache-2.0。著作権者名・ライセンスを保持 |
 | RTOS・表示ライブラリ等 | Zephyr／LVGL等の外部依存物。各ライセンスと通知を同梱 |
-| キーボード側の送信処理 | t-oguraのMITモジュールを別途使用。Satelliteの独自コードではない |
+| キーボード側の送信処理 | t-oguraのMIT送信実装を共通アダプター経由で使用。独自受信器コードとは別 |
 | 元のProspectorの基板・ケース等 | 今回取り込んでいない。元のハードウェア設計はCERN-OHL-P v2、元のFWはMIT |
 
 「依存物まで一切流用していない」という意味ではありません。再利用箇所を区別して表示しています。[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) と `licenses/` をバイナリ配布時にも同梱してください。今後ケース等の設計を流用する場合は、FWとは別にハードウェア側の条件を確認します。
