@@ -1,0 +1,2 @@
+/* Alternative for CS-less panel variants. Append after boards/xiao_ble.overlay. */
+&satellite_lcd { mipi-cpol; mipi-cpha; };
