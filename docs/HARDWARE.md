@@ -28,7 +28,7 @@ SPI2は初期4MHz、MOSIのみ。D9/MISOは使わず、UART0/I2C1/QSPIも無効�
 追加overlayの例（既定のboard overlayも明示して保持）:
 
 ```sh
-west build -p always -b xiao_ble/nrf52840 zmk-satellite-view -d build-display -- -DSATELLITE_STAGE=display '-DDTC_OVERLAY_FILE=boards/xiao_ble.overlay;config/mode3.overlay'
+west build -p always -b xiao_ble/nrf52840 zmk-satellite -d build-display -- -DSATELLITE_STAGE=display '-DDTC_OVERLAY_FILE=boards/xiao_ble.overlay;config/mode3.overlay'
 ```
 
 USBシリアルログの読取例: 端末ソフトを115200bpsで接続。FWはDTRを待ちません。起動ログを逃した場合は端末を開いてからリセットします。

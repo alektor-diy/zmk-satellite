@@ -6,9 +6,9 @@ Windows環境で、Zephyr 4.1.0（commitはwest.ymlに固定）、Python 3.13.7�
 
 | 段階 | XIAO向けビルド | FLASH | RAM |
 |---|---|---:|---:|
-| display | 成功、UF2生成 | 308,692 B | 71,488 B |
-| ble | 成功、UF2生成 | 113,932 B | 36,652 B |
-| status | 成功、UF2生成 | 347,140 B | 81,580 B |
+| display | 成功、UF2生成 | 308,676 B | 71,488 B |
+| ble | 成功、UF2生成 | 113,920 B | 36,652 B |
+| status | 成功、UF2生成 | 347,124 B | 81,580 B |
 
 使用可能領域はFLASH 788KiB、RAM 256KiB。UF2ファイルは各データブロックを検査し、nRF52840 family ID `0xADA52840`、先頭 `0x27000`、全書き込み先がアプリ領域 `0x27000..0xEC000` 未満に収まること、ブロック数・マジック値・番号の整合を確認。SHA-256は `firmware/manifest.json` と `firmware/SHA256SUMS.txt` に記録。
 

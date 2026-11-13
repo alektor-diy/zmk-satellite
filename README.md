@@ -1,4 +1,4 @@
-# ZMK Satellite View
+# ZMK Satellite
 
 XIAO nRF52840 と 1.3インチ 240×240 ST7789 SPI LCD を使う、ZMKキーボード状態表示専用の独立ファームウェアです。ZMKアプリを流用せず **Zephyr 4.1.0 + LVGL 9** で構成しています。Prospector互換広告を受信し、接続枠を消費するGATT接続は行いません。アクティブスキャンのSCAN_REQは送信します。
 
@@ -36,9 +36,9 @@ LCDの販売URL・正確な型番は未提示です。BLKの動作、実際のCS
 
 配布フォルダ `firmware/` に3種類のUF2をまとめます。XIAOのリセットパッドを素早く2回操作してUF2ブートローダードライブを表示し、次の順番でコピーします（ドライブ名はブートローダーにより異なります）。
 
-1. `satellite-view-display.uf2`: BLEなし。外周枠、RGBバー、模擬76%／65%、5秒ごとに変わるレイヤー番号を確認。25秒周期で受信途絶も模擬します。**実際の受信値ではありません。**
-2. `satellite-view-ble.uf2`: LCDなしでも動作。USBシリアル115200で `ID=... L=... R=... layer=... BT=...` を確認。キーボード側の対応が必要です。
-3. `satellite-view-status.uf2`: 実際の広告を表示。標準で受信途絶95秒後にstaleへ移行。同じキーボードが戻れば復帰。
+1. `satellite-display.uf2`: BLEなし。外周枠、RGBバー、模擬76%／65%、5秒ごとに変わるレイヤー番号を確認。25秒周期で受信途絶も模擬します。**実際の受信値ではありません。**
+2. `satellite-ble.uf2`: LCDなしでも動作。USBシリアル115200で `ID=... L=... R=... layer=... BT=...` を確認。キーボード側の対応が必要です。
+3. `satellite-status.uf2`: 実際の広告を表示。標準で受信途絶95秒後にstaleへ移行。同じキーボードが戻れば復帰。
 
 FWはUSBホスト／DTRを待ちません。USB充電器でも表示を開始します。UF2は標準Seeed/Adafruit系 **S140 v7レイアウト、アプリ開始0x27000** のブートローダーを想定します。既存のブートローダーやSoftDevice領域を消去しないでください。ZephyrのBLEコントローラーを使用し、SoftDevice APIにはリンクしません。
 
@@ -78,18 +78,18 @@ Zephyrの開発環境（Python 3.10以上、Git、CMake 3.20以上、Ninja、DTC
 
 ```sh
 mkdir satellite-workspace && cd satellite-workspace
-git clone <この非公開リポジトリのURL> zmk-satellite-view
+git clone <この非公開リポジトリのURL> zmk-satellite
 python3 -m venv .venv
 . .venv/bin/activate
 pip install west 'cmake<4' ninja
-west init -l zmk-satellite-view
+west init -l zmk-satellite
 west update
 pip install -r zephyr/scripts/requirements-base.txt
 west zephyr-export
 west sdk install --version 0.17.0 --toolchains arm-zephyr-eabi
-west build -b xiao_ble/nrf52840 zmk-satellite-view -d build-display -- -DSATELLITE_STAGE=display
-west build -b xiao_ble/nrf52840 zmk-satellite-view -d build-ble -- -DSATELLITE_STAGE=ble
-west build -b xiao_ble/nrf52840 zmk-satellite-view -d build-status -- -DSATELLITE_STAGE=status
+west build -b xiao_ble/nrf52840 zmk-satellite -d build-display -- -DSATELLITE_STAGE=display
+west build -b xiao_ble/nrf52840 zmk-satellite -d build-ble -- -DSATELLITE_STAGE=ble
+west build -b xiao_ble/nrf52840 zmk-satellite -d build-status -- -DSATELLITE_STAGE=status
 ```
 
 成果物は各 `build-*/zephyr/zephyr.uf2`。Windowsネイティブでは `scripts/build.ps1` も使えます。ビルドモードやoverlayを変更するときは新しいbuildディレクトリ、または `west build -p always` を使ってください。自動ビルド用のGitHub Actionsも同梱していますが、GitHubへ登録して実行するまでCIは未検証です。
@@ -103,7 +103,7 @@ CONFIG_SATELLITE_TIMEOUT_MS=95000
 ```
 
 ```sh
-west build -p always -b xiao_ble/nrf52840 zmk-satellite-view -d build-status -- -DSATELLITE_STAGE=status -DEXTRA_CONF_FILE=/absolute/path/to/local.conf
+west build -p always -b xiao_ble/nrf52840 zmk-satellite -d build-status -- -DSATELLITE_STAGE=status -DEXTRA_CONF_FILE=/absolute/path/to/local.conf
 ```
 
 チャンネルは上流と同じく **0または10以上は全受信、1〜9は同じ値か送信側0を受信** です。10以上を専用ペア番号と考えないでください。ID指定が最も確実です。ID未指定時に違うキーボードが選ばれた場合は再起動、またはID固定して再ビルドします。ペアリング・認証の機能ではありません。
@@ -119,7 +119,7 @@ west build -p always -b xiao_ble/nrf52840 zmk-satellite-view -d build-status -- 
 - 自動キーボード切替・設定保存・OTA・操作UI・輝度調整はありません。CSがないためバス共有不可。
 - USB VID/PIDはZephyr試験用の既定値。頒布時は割り当て・USB識別を決めてください。
 - 中間PCB／ケースは未設計。液晶の調達先・寸法・固定穴・USB抜き差し対策は実機合格後に確定。
-- 名称は2026-11-13の一般Web検索で完全一致のプロジェクトを発見できなかったものです。商標登録簿・類似称呼の調査は未実施。ZMK公式製品を名乗るものではありません。
+- 名称はユーザー指定の **ZMK Satellite**。名称変更後の商標登録簿・類似称呼の調査は未実施。ZMK公式製品を名乗るものではありません。
 - 非公開のGitリポジトリとしてローカルで準備。GitHub作成・pushは認証接続後に実施します。公開する設定は含めていません。
 
 ## ライセンスと参考元

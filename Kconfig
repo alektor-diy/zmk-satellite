@@ -1,4 +1,4 @@
-mainmenu "ZMK Satellite View"
+mainmenu "ZMK Satellite"
 source "Kconfig.zephyr"
 
 config SATELLITE_DISPLAY

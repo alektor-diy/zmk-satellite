@@ -1,7 +1,7 @@
 manifest:
   version: "0.13"
   self:
-    path: zmk-satellite-view
+    path: zmk-satellite
   projects:
     - name: zephyr
       url: https://github.com/zephyrproject-rtos/zephyr

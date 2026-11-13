@@ -11,7 +11,7 @@ try {
         if ($LASTEXITCODE -or -not $Owner) { throw 'Could not resolve authenticated owner' }
     }
     if ($Owner -notmatch '^[A-Za-z0-9-]+$') { throw 'Invalid GitHub owner' }
-    $repo = "$Owner/zmk-satellite-view"
+    $repo = "$Owner/zmk-satellite"
     $ErrorActionPreference = 'Continue'
     $existing = & gh api "repos/$repo" 2>$null
     $repoStatus = $LASTEXITCODE

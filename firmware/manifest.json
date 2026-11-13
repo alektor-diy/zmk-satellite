@@ -1,10 +1,10 @@
 [
   {
     "stage": "display",
-    "file": "satellite-view-display.uf2",
+    "file": "satellite-display.uf2",
     "bytes": 617472,
-    "sha256": "8d58102a5158d667742ed6553871f5fbbff21c9301e0846f89884c67208c5874",
-    "flash": 308692,
+    "sha256": "545ebbfac7e2cfd388393997cea9aa4732be4d7435d8a932ec09f5ff76a9209a",
+    "flash": 308676,
     "ram": 71488,
     "blocks": 1206,
     "start": "0x27000",
@@ -12,23 +12,23 @@
   },
   {
     "stage": "ble",
-    "file": "satellite-view-ble.uf2",
-    "bytes": 228352,
-    "sha256": "4b4aed91466dc27054e0ed8a00a8dfc1ab955f5008e14be3a7d649e35780f1fe",
-    "flash": 113932,
+    "file": "satellite-ble.uf2",
+    "bytes": 227840,
+    "sha256": "70eb6cac95a4cf6504f6e53cdeb489ada0ddf46a091cdf6819d061de0286a7f4",
+    "flash": 113920,
     "ram": 36652,
-    "blocks": 446,
+    "blocks": 445,
     "start": "0x27000",
     "family": "0xADA52840"
   },
   {
     "stage": "status",
-    "file": "satellite-view-status.uf2",
-    "bytes": 694784,
-    "sha256": "d738ce1fd49323c12f066a6809d385edfa07f135fcbfb3ed4650834528c3f7a1",
-    "flash": 347140,
+    "file": "satellite-status.uf2",
+    "bytes": 694272,
+    "sha256": "7fc14c25ce2c4c2225ec355a3353347c7d1df4fb86993a17d16d543afc47b76e",
+    "flash": 347124,
     "ram": 81580,
-    "blocks": 1357,
+    "blocks": 1356,
     "start": "0x27000",
     "family": "0xADA52840"
   }

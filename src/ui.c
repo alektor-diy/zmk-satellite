@@ -27,7 +27,7 @@ int sat_ui_init(void)
     lv_obj_set_style_border_color(screen, lv_color_hex(0x68bdd5), 0);
     lv_obj_set_style_border_width(screen, 1, 0);
     lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
-    label("SATELLITE VIEW", 12);
+    label("ZMK SATELLITE", 12);
     status = label("Scanning...", 38);
     layer = label("Layer --", 68);
     lv_obj_set_style_text_font(layer, &lv_font_montserrat_24, 0);
