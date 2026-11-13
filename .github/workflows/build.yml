@@ -1,0 +1,49 @@
+name: Build prototype firmware
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/test-host.sh
+  firmware:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        stage: [display, ble, status]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: zmk-satellite
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build device-tree-compiler gperf
+          pip install west 'cmake<4'
+          west init -l zmk-satellite
+          west update
+          pip install -r zephyr/scripts/requirements-base.txt
+          west zephyr-export
+          west sdk install --version 0.17.0 --toolchains arm-zephyr-eabi
+      - name: Build XIAO firmware
+        run: west build -b xiao_ble/nrf52840 zmk-satellite -d build -- -DSATELLITE_STAGE=${{ matrix.stage }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: satellite-${{ matrix.stage }}
+          path: |
+            build/zephyr/zephyr.uf2
+            build/zephyr/zephyr.elf
+            build/zephyr/zephyr.map
+            build/zephyr/.config
+            build/zephyr/zephyr.dts
+            zmk-satellite/licenses/
+            zmk-satellite/THIRD_PARTY_NOTICES.md

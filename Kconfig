@@ -1,0 +1,33 @@
+mainmenu "ZMK Satellite"
+source "Kconfig.zephyr"
+
+config SATELLITE_DISPLAY
+    bool "Enable ST7789 / LVGL display"
+    default y
+    select DISPLAY
+    select LVGL
+
+config SATELLITE_BLE
+    bool "Receive Prospector-compatible advertisements"
+    default y
+    select BT
+    select BT_OBSERVER
+
+config SATELLITE_DISPLAY_TEST
+    bool "Show color, border and simulated-state test (no live BLE)"
+    default n
+    depends on SATELLITE_DISPLAY && !SATELLITE_BLE
+
+config SATELLITE_CHANNEL
+    int "Prospector scanner channel (0 or >=10 accepts all, upstream semantics)"
+    range 0 255
+    default 0
+
+config SATELLITE_KEYBOARD_ID
+    string "Optional keyboard ID, 8 hexadecimal characters in wire order"
+    default ""
+
+config SATELLITE_TIMEOUT_MS
+    int "Advertisement silence timeout (must exceed keyboard idle interval)"
+    range 1000 3600000
+    default 95000

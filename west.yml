@@ -1,0 +1,10 @@
+manifest:
+  version: "0.13"
+  self:
+    path: zmk-satellite
+  projects:
+    - name: zephyr
+      url: https://github.com/zephyrproject-rtos/zephyr
+      revision: 7823374e872145b5bd018bfe447839eb36042611 # v4.1.0
+      import:
+        name-allowlist: [cmsis, cmsis_6, hal_nordic, lvgl, segger]

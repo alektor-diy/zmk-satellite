@@ -1,0 +1,94 @@
+{
+  "window_tokens": 30,
+  "reference_file_counts": {
+    "scanner": 0,
+    "scanner-module": 68,
+    "original-firmware": 45,
+    "original-hardware": 0,
+    "zephyr-lcd": 2
+  },
+  "reference_revisions": {
+    "scanner": "391cd16a33ca0e2b62199d298273ed36cc6de2f9",
+    "scanner-module": "72a71aeea816eb0f86ffc5b108b267076ce5f0af",
+    "original-firmware": "77a852293532879c992847e01db27abe4f94fa9f",
+    "original-hardware": "19ab80f9e656592b9d0319ecfb9c35bf9c5e10dd",
+    "zephyr-lcd": "7823374e872145b5bd018bfe447839eb36042611"
+  },
+  "application_files": [
+    {
+      "file": "src/main.c",
+      "sha256": "35203dbcf62590a7506342d6367ac3e248987350f5d57ec5ab9d331cd6d65582",
+      "tokens_without_comments": 621,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "src/protocol.c",
+      "sha256": "55d2adefb4eb0e8a9af1309a6dcd2927a4be8b432aa61b45cf43546e7a416123",
+      "tokens_without_comments": 675,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "src/protocol.h",
+      "sha256": "97805fb8ddbbbd8874651a30e5bef3d69933c1bf339323628d1610519a3ba262",
+      "tokens_without_comments": 140,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "src/scanner.c",
+      "sha256": "28443e9f85c076dabcbd62601ba591ded62556ad4119069229ca474b2358a733",
+      "tokens_without_comments": 270,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "src/scanner.h",
+      "sha256": "e127402957ba49a63f6eeec9a4cb93f526062dc3da9f98bc55e57100a6a1f39c",
+      "tokens_without_comments": 42,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "src/state.c",
+      "sha256": "85e80b74d8ac1b0664fade824b4d35928f8d770cd02972e0c5a478cc386034d5",
+      "tokens_without_comments": 161,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "src/state.h",
+      "sha256": "760fce96216c718fe639646a3c839fbfbe901a765f5ef10d305cdd254bc9304c",
+      "tokens_without_comments": 69,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "src/ui.c",
+      "sha256": "e14b5c840894cff4433194115c128ef70ea55113fc4abe3362274f28a278867d",
+      "tokens_without_comments": 860,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "src/ui.h",
+      "sha256": "2ae31d0c486613fbdb126a6b2d0002e4ba61b6c2f911673946b310ce08a30c3b",
+      "tokens_without_comments": 40,
+      "identical_files": [],
+      "shared_30_token_windows": {}
+    },
+    {
+      "file": "boards/xiao_ble.overlay",
+      "sha256": "09147f2f44201a80e345eddb84f92a3d1e1327dfe6fc8cd0172f1f514aa60d14",
+      "tokens_without_comments": 496,
+      "identical_files": [],
+      "shared_30_token_windows": {
+        "original-firmware/boards/shields/prospector_adapter/boards/seeeduino_xiao_ble.overlay": 61,
+        "scanner-module/boards/shields/prospector_scanner/prospector_scanner.overlay": 39,
+        "zephyr-lcd/st7789v_tl019fqv01.overlay": 10,
+        "zephyr-lcd/st7789v_waveshare_240x240.overlay": 89
+      }
+    }
+  ]
+}

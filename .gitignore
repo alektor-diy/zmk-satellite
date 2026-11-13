@@ -1,0 +1,5 @@
+build*/
+.west/
+.venv/
+__pycache__/
+*.log
