@@ -6,6 +6,14 @@ hardware drawings are bundled. No ZMK application code is linked into the scanne
 
 ## Reference projects (not firmware dependencies)
 
+- `carrefinho/prospector`, commit
+  `19ab80f9e656592b9d0319ecfb9c35bf9c5e10dd`, CERN-OHL-P v2.
+  Original hardware concept. No CAD, case/STL, drawings, logo or assembly artwork
+  has been incorporated. Its hardware license is distinct from firmware MIT.
+- `carrefinho/prospector-zmk-module`, commit
+  `77a852293532879c992847e01db27abe4f94fa9f`, MIT.
+  Original dongle firmware, inspected for provenance/source comparison.
+
 - `t-ogura/zmk-config-prospector`, commit
   `391cd16a33ca0e2b62199d298273ed36cc6de2f9`, MIT.
 - `t-ogura/prospector-zmk-module`, v2.2.3 commit
@@ -14,6 +22,14 @@ hardware drawings are bundled. No ZMK application code is linked into the scanne
   version/profile masking, channel rules, and sender-side left/right placement.
   Its original notices are retained in `licenses/Prospector-*.txt` for provenance.
   The keyboard-side module remains a separate dependency of the user's ZMK build.
+
+The original hardware's canonical LICENSE is CERN-OHL-P v2, even where retained
+upstream attribution summaries describe the original hardware as MIT. Those
+summaries are preserved as received and do not replace the hardware repository's
+actual license. Original license texts are in `licenses/Original-Prospector-*`.
+The audit scope, source fingerprints and comparison limitations are documented in
+`docs/SOURCE_AUDIT.md` and `docs/reference-comparison.json`. This is an engineering
+provenance review, not a blanket legal clearance or a clean-room claim.
 
 ## Firmware dependencies
 
