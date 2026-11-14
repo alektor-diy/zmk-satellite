@@ -2,34 +2,40 @@
   {
     "stage": "display",
     "file": "satellite-display.uf2",
-    "bytes": 617472,
-    "sha256": "545ebbfac7e2cfd388393997cea9aa4732be4d7435d8a932ec09f5ff76a9209a",
-    "flash": 308676,
+    "bytes": 814080,
+    "sha256": "03689f90638838ebe4525849646a5b9738652efcc04cf154c461e1ccb60e0ae7",
+    "flash": 406792,
     "ram": 71488,
-    "blocks": 1206,
+    "blocks": 1590,
     "start": "0x27000",
-    "family": "0xADA52840"
+    "family": "0xADA52840",
+    "spi_mode": 3,
+    "ram_param": "00 f8",
+    "ui": "battery-compact-number-only"
   },
   {
     "stage": "ble",
     "file": "satellite-ble.uf2",
-    "bytes": 227840,
-    "sha256": "70eb6cac95a4cf6504f6e53cdeb489ada0ddf46a091cdf6819d061de0286a7f4",
-    "flash": 113920,
-    "ram": 36652,
-    "blocks": 445,
+    "bytes": 229376,
+    "sha256": "b73bd120c58befce4e2218eb8ae65fb52cfe6e084bb5f82552eb75afc6a31488",
+    "flash": 114448,
+    "ram": 37676,
+    "blocks": 448,
     "start": "0x27000",
     "family": "0xADA52840"
   },
   {
     "stage": "status",
     "file": "satellite-status.uf2",
-    "bytes": 694272,
-    "sha256": "7fc14c25ce2c4c2225ec355a3353347c7d1df4fb86993a17d16d543afc47b76e",
-    "flash": 347124,
-    "ram": 81580,
-    "blocks": 1356,
+    "bytes": 891904,
+    "sha256": "15e1acea1d635b0e41d28446c4492fe63c6d028496641d7ac29df410cce158a5",
+    "flash": 445736,
+    "ram": 82668,
+    "blocks": 1742,
     "start": "0x27000",
-    "family": "0xADA52840"
+    "family": "0xADA52840",
+    "spi_mode": 3,
+    "ram_param": "00 f8",
+    "ui": "battery-compact-number-only"
   }
 ]

@@ -6,6 +6,7 @@ struct sat_state {
     int64_t last_seen;
     int8_t rssi;
     bool seen;
+    char keyboard_name[SAT_NAME_SIZE];
 };
 bool sat_online(const struct sat_state *s, int64_t now, int64_t timeout);
 /* First ID stays selected, including after timeout. No mixing adjacent keyboards. */

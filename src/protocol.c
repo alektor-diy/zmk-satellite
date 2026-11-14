@@ -66,3 +66,53 @@ bool sat_parse_id(const char *s, uint8_t out[4])
     memcpy(out, id, 4);
     return true;
 }
+
+/* Names are separate AD reports. Keep parsing independent of the Bluetooth stack. */
+bool sat_parse_name(const uint8_t *d, size_t n, char out[SAT_NAME_SIZE])
+{
+    if (!d || !out) return false;
+    char name[SAT_NAME_SIZE] = {0};
+    bool found = false, complete = false;
+    while (n) {
+        size_t field = *d++;
+        --n;
+        if (!field) break;
+        if (field > n) return false;
+        if ((d[0] == 0x08 || d[0] == 0x09) && field > 1 &&
+            (!complete || d[0] == 0x09)) {
+            size_t used = 0;
+            for (size_t i = 1; i < field && used < SAT_NAME_SIZE - 1; ++i) {
+                uint8_t c = d[i];
+                if (!c) break;
+                if (i + 2 < field && c == 0xef && d[i+1] == 0xbc && d[i+2] == 0xbf) {
+                    name[used++] = '_'; /* Full-width underscore, common in keyboard names. */
+                    i += 2;
+                } else if (c >= 0x80) {
+                    name[used++] = '?';
+                    while (i + 1 < field && (d[i+1] & 0xc0) == 0x80) ++i;
+                } else name[used++] = c >= 32 && c <= 126 ? (char)c : '?';
+            }
+            name[used] = 0;
+            found = used > 0;
+            complete = d[0] == 0x09;
+        }
+        d += field;
+        n -= field;
+    }
+    if (found) memcpy(out, name, SAT_NAME_SIZE);
+    return found;
+}
+
+enum sat_host_status sat_host_from_flags(uint8_t flags)
+{
+    bool usb = (flags & 0x08) != 0; /* HID-ready, not merely USB power. */
+    bool ble = (flags & 0x10) != 0;
+    return usb ? (ble ? SAT_HOST_BOTH : SAT_HOST_USB) :
+                 (ble ? SAT_HOST_BLE : SAT_HOST_OFFLINE);
+}
+
+enum sat_bt_status sat_bt_from_flags(uint8_t flags)
+{
+    if (flags & 0x10) return SAT_BT_CONNECTED;
+    return flags & 0x20 ? SAT_BT_PAIRED : SAT_BT_UNPAIRED;
+}

@@ -30,7 +30,7 @@ ZMK v0.3、指定のZephyr 3.5、Prospector v2.2.3（固定commit）で確認し
 
 ## 未確認・注意
 
-新しい共通モジュール構成の実機試験、電池消費、全キーボード／全ZMK forkでの検証は未実施です。標準CorneのCIワークフローは追加済みですがGitHub上での実行はpush後です。現時点のリポジトリ非公開状態は維持しており、別リポジトリから取得するCIには読み取り認証が必要です。
+新しい共通モジュール構成の実機試験、電池消費、全キーボード／全ZMK forkでの検証は未実施です。標準CorneのCIワークフローは追加済みですがGitHub上での実行はpush後です。現在は公開リポジトリから取得でき、専用の読み取り認証は不要です。
 
 元のZMK v0.3コードの未使用変数・ログ書式、非推奨ボード設定、GNU ldのRWX、本Windows環境のDTC未検出／長いobject pathなどの警告は残っています。Python devicetree生成・binding検査・Cビルド・リンクは通過しています。
 
@@ -38,4 +38,4 @@ ZMK v0.3、指定のZephyr 3.5、Prospector v2.2.3（固定commit）で確認し
 
 Satelliteの `b0660ff2f3784a0db54596cd660e1d6f7ea218a3` をローカルfile URLのwest projectとして取得し、`import: module/west.yml` によってProspector固定版が自動取得されることを確認しました。受信器用のルートwest.ymlは取り込まれず、既存ZMK v0.3／Zephyr 3.5を維持しています。その後、Satelliteを手動のEXTRA_MODULESへ指定せずiOra左右を再ビルドし成功しました。iOraへの適用は `92abc7f` です。
 
-このテストは実際のwest import／module自動認識を通していますが、GitHub HTTPSの非公開依存認証やActions実行を検証したものではありません。iOra側には任意の `ZMK_SATELLITE_READ_TOKEN` 対応を用意し、非公開モジュールのソースを共有キャッシュから除外しています。実際のトークン／Secretは作成していません。
+このテストは実際のwest import／module自動認識を通していますが、GitHub HTTPSの非公開依存認証やActions実行を検証したものではありません。以前の非公開依存向けの認証設定は撤去済みです。現行の導入は公開モジュール追加とON設定だけです。

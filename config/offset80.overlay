@@ -1,2 +1,0 @@
-/* Alternative viewport for panel variants exposing rows 80..319. */
-&satellite_lcd { y-offset = <80>; };

@@ -8,28 +8,23 @@
 
 `reg=<0>` はドライバの論理slave番号で、物理CSピンを作る指定ではありません。MIPIの「4WIRE」はSCK/MOSI/CS/DCの分類名ですが、CSはLCD内部で選択されている前提です。CSが外にないモジュールはSPIバスを共有できません。
 
-SPI2は初期4MHz、MOSIのみ。D9/MISOは使わず、UART0/I2C1/QSPIも無効化しています。短い配線・GND共通で検証してください。P0.28/P0.29は電源ピンではなくRES/DCです。
+試作実機ではSPI mode 0で無表示、mode 3で描画を確認したため、標準設定は**SPI mode 3**です。追加overlayは不要です。SPI2は4MHz、MOSIのみ。D9/MISOは使わず、UART0/I2C1/QSPIも無効化しています。短い配線・GND共通で検証してください。P0.28/P0.29は電源ピンではなくRES/DCです。
 
 ## 1. 表示だけを確認
 
 1. 電源を外して導通・VCC/GND・Dピン表記を確認。
-2. display UF2を書き込み。外周の1px枠が四辺とも見えること、下部の赤・緑・青バーの色順と模擬値を確認。
-3. 5秒ごとのレイヤー番号更新、15秒以降の広告停止模擬、最後の模擬更新から5秒後のstale表示、25秒付近での復帰を確認。
+2. display UF2を書き込み。濃紺背景と白系文字、左右バッテリー、名前、BT3／USBの表示とUSBのオレンジ色を確認。現行UIには外周枠・RGBテストバー・最下段のLIVE/RSSI表示はありません。
+3. 3秒ごとのレイヤー番号・接続状態更新、15秒以降の広告停止模擬、最後の模擬更新から5秒後のstale表示、25秒付近での復帰を確認。
 4. USB充電器でも開始するか確認。PCのシリアル接続待ちはありません。
 
 白画面はまずRES/DC逆・SCL/SDA逆・3V3・GND・ブートログを確認。BL点灯だけではLCD通信成功を意味しません。切り分けは次の一項目ずつ行います。
 
-- **完全に白／無反応**: CSなしST7789のモジュール差でSPI mode 3が必要な場合があります。`config/mode3.overlay` を追加。
-- **80行程度の欠け／ずれ**: 240×320 RAMのうちどこを240×240として使うかに差があります。`config/offset80.overlay` を追加して比較。
-- **赤青が逆**: `mdac` のBGR bit（0x08）やST7789VのRGB/BGR pixel-format設定を確認。まずRGBバーで判定。
+- **完全に白／無反応**: 新しいFWがSPI mode 3でビルドされていること、RES/DC・SCL/SDA・3V3・GNDを確認。バックライト点灯だけでは通信成功を意味しません。標準の `boards/xiao_ble.overlay` だけでmode 3になります。
+- **80行程度の欠け／ずれ**: 240×320 RAMのうちどこを240×240として使うかに差があります。別型番のパネルでは `boards/xiao_ble.overlay` の `y-offset` を見直します。今回の実機は0で正常表示しています。
+- **赤青が逆**: `mdac` のBGR bit（0x08）やST7789VのRGB/BGR pixel-format設定を確認。背景・文字・左右のバーの色とRGB565のバイト順を確認。
+- **ピンク系背景・黄緑の文字・オレンジのバー**: RGB565のバイト順不一致を疑う。現行設定の `ram-param = [00 f8]` はLVGLのlittle-endianデータに合わせたもので、実機で色の正常化を確認済み。
 - **ネガ反転色**: `inversion-off;` をLCDノードへ追加して比較。
 - **上下反転／回転**: `mdac` のMX/MY/MVとx/y-offsetをセットで調整。回転とオフセットは基板が確定してから固定。
-
-追加overlayの例（既定のboard overlayも明示して保持）:
-
-```sh
-west build -p always -b xiao_ble/nrf52840 zmk-satellite -d build-display -- -DSATELLITE_STAGE=display '-DDTC_OVERLAY_FILE=boards/xiao_ble.overlay;config/mode3.overlay'
-```
 
 USBシリアルログの読取例: 端末ソフトを115200bpsで接続。FWはDTRを待ちません。起動ログを逃した場合は端末を開いてからリセットします。
 
@@ -43,7 +38,7 @@ USBシリアルログの読取例: 端末ソフトを115200bpsで接続。FWはD
 
 - status UF2でdisplay/bleの結果と一致すること。
 - BTプロファイルを切り替えても同じkeyboard IDを追うこと。
-- PCのBTだけ切断した場合 `BT offline`、キーボード電源断では95秒後 `Signal lost / stale` となること。
+- PCのBTだけ切断した場合 `PAIRED / DISCONNECTED`、キーボード電源断では95秒後 `Signal lost / stale` となること。
 - 片側電源断と両側電源断を別々に試す。central広告が続く場合のperipheral残量の鮮度には制約あり。
 - 数分idle後も95秒タイムアウトにならないこと。idle間隔を変更した場合はタイムアウトも再設定。
 - 同じキーボードを再投入し表示が自動復帰すること。

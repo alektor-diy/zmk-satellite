@@ -5,6 +5,12 @@
 #include <stdint.h>
 
 #define SAT_PAYLOAD_SIZE 26
+#define SAT_NAME_SIZE 32
+enum sat_host_status { SAT_HOST_OFFLINE, SAT_HOST_BLE, SAT_HOST_USB, SAT_HOST_BOTH };
+enum sat_host_status sat_host_from_flags(uint8_t flags);
+enum sat_bt_status { SAT_BT_UNPAIRED, SAT_BT_PAIRED, SAT_BT_CONNECTED };
+enum sat_bt_status sat_bt_from_flags(uint8_t flags);
+bool sat_parse_name(const uint8_t *data, size_t len, char out[SAT_NAME_SIZE]);
 struct sat_packet {
     uint8_t version, battery_left, battery_right, layer, profile;
     uint8_t connections, flags, role, index, aux[2], id[4];

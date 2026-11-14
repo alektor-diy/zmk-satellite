@@ -4,6 +4,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/usb/usb_device.h>
 #include <string.h>
+#include <stdio.h>
 #ifdef CONFIG_SATELLITE_BLE
 #include "scanner.h"
 #endif
@@ -62,6 +63,8 @@ int main(void)
         for (unsigned i = 0; !fatal && i < 16 && sat_scanner_take(&rx); ++i) {
             if (sat_update(&state, &rx.packet, rx.rssi, rx.time,
                            CONFIG_SATELLITE_CHANNEL, filter_id)) {
+                if (rx.keyboard_name[0])
+                    memcpy(state.keyboard_name, rx.keyboard_name, sizeof(state.keyboard_name));
                 LOG_INF("ID=%02X%02X%02X%02X L=%u R=%u layer=%u(%s) BT=%u flags=%02x RSSI=%d",
                     rx.packet.id[0], rx.packet.id[1], rx.packet.id[2], rx.packet.id[3],
                     rx.packet.battery_left, rx.packet.battery_right, rx.packet.layer,
@@ -72,8 +75,12 @@ int main(void)
 #ifdef CONFIG_SATELLITE_DISPLAY_TEST
         struct sat_packet p = {.version = 0x22, .battery_left = 76,
             .battery_right = 65, .role = 1, .profile = 2, .flags = 0x10,
-            .layer = (now / 5000) % 4, .id = {0x12,0x34,0x56,0x78}};
-        memcpy(p.layer_name, "BASE", 5);
+            .layer = (now / 3000) % 5, .id = {0x12,0x34,0x56,0x78}};
+        const char *demo_layers[] = {"BASE", "NAV", "NUM", "ADJ", "Auto"};
+        snprintf(p.layer_name, sizeof(p.layer_name), "%s", demo_layers[p.layer]);
+        const uint8_t demo_flags[] = {0x30, 0x20, 0x00, 0x08, 0x38};
+        p.flags = demo_flags[(now / 3000) % 5];
+        memcpy(state.keyboard_name, "Demo board", 11);
         /* 15s live simulation, then simulated loss; repeats every 25s. */
         if (now % 25000 < 15000)
             sat_update(&state, &p, -48, now, 0, NULL);

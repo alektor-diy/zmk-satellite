@@ -27,6 +27,13 @@ config SATELLITE_KEYBOARD_ID
     string "Optional keyboard ID, 8 hexadecimal characters in wire order"
     default ""
 
+config SATELLITE_KEYBOARD_NAME
+    string "Optional display name override (ASCII)"
+    default ""
+    help
+      Normally the keyboard name is learned from its BLE name advertisements.
+      Set this only for a local display alias; it does not change the keyboard.
+
 config SATELLITE_TIMEOUT_MS
     int "Advertisement silence timeout (must exceed keyboard idle interval)"
     range 1000 3600000

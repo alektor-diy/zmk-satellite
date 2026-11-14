@@ -1,58 +1,30 @@
-# 検証記録 — 2026-11-13
+# 現行版の検証記録 — 2026-11-15
 
-## 実施済み
+現行配布は `battery-compact-number-only` です。上段にキーボード名とレイヤー番号、中央に左右残量、下段にBT1〜BT5／USBと接続状態を表示します。レイヤー名・修飾キー・LIVE・RSSIは表示しません。
 
-Windows環境で、Zephyr 4.1.0（commitはwest.ymlに固定）、Python 3.13.7、CMake 3.31.10、Ninja 1.13.2、GNU Arm Embedded GCC 12.2.0を使用。既存のQMK MSYSにあるArmコンパイラーを `cross-compile` toolchainとして使い、minimal libcでリンクしました。SDK 0.17.0を使う標準手順・CI設定も用意していますが、そのSDKを使ったビルドは本環境では実施していません。
+## ビルドとファイル検証
 
-| 段階 | XIAO向けビルド | FLASH | RAM |
-|---|---|---:|---:|
-| display | 成功、UF2生成 | 308,676 B | 71,488 B |
-| ble | 成功、UF2生成 | 113,920 B | 36,652 B |
-| status | 成功、UF2生成 | 347,124 B | 81,580 B |
+Windows、Zephyr 4.1.0、LVGL 9、GNU Arm Embedded GCC 12.2.0で3段階のビルドに成功。UF2のブロック番号・マジック・family ID `0xADA52840`・書込領域 `0x27000..0xEC000`・SHA-256を確認しました。サイズとハッシュの正本は [manifest](../firmware/manifest.json) と [SHA256SUMS](../firmware/SHA256SUMS.txt) です。
 
-使用可能領域はFLASH 788KiB、RAM 256KiB。UF2ファイルは各データブロックを検査し、nRF52840 family ID `0xADA52840`、先頭 `0x27000`、全書き込み先がアプリ領域 `0x27000..0xEC000` 未満に収まること、ブロック数・マジック値・番号の整合を確認。SHA-256は `firmware/manifest.json` と `firmware/SHA256SUMS.txt` に記録。
+| 段階 | FLASH | RAM |
+|---|---:|---:|
+| display | 406,792 B | 71,488 B |
+| ble | 114,448 B | 37,676 B |
+| status | 445,736 B | 82,668 B |
 
-有効設定も確認: status/bleはBT_OBSERVERのみ、BT_CONN／BT_CENTRAL／BT_PERIPHERAL／BT_BROADCASTERを使わず、displayではBLEを無効化、bleではLVGL／DISPLAYを無効化。LVGLはメインスレッドから明示初期化して結果を確認します。
+表示設定はSPI mode 3、4MHz、オフセット0、RAM制御00 f8。固定レイヤー名対応表・機種固有の表示設定はありません。キーボード側の広告形式とON設定は変更していません。
 
-ホストGCC 13.2.0で `-std=c11 -Wall -Wextra -Werror` を指定し、同じ `protocol.c` / `state.c` をコンパイルして実行。次を通過しました。
+## 確認済み
 
-- 独立した31バイトfixtureとmanufacturer-only（SCAN_RSP想定）で26バイト形式をデコード。
-- 左右残量、4文字でNULのないレイヤー名、profile patch/devのマスク、ID wire order。
-- 全ての短縮長、壊れたAD長、誤った識別子、未知major、peripheral role、無効profileの拒否。
-- 非ASCII名の安全な置換、チャンネル0／1〜9／10以上の上流互換判定、固定IDの検査。
-- 未受信状態、タイムアウト境界、別IDの混入拒否、同じIDからの復帰。
-- 決定的に生成した不正AD入力100,000件で解析ループが終了すること。
+- プロトコル・状態管理・名前解析・BT状態のホスト試験と100,000件の不正フレーム検査。WindowsではASan未使用、Linux用テストはASan/UBSan付き。
+- 実フォントでSylvaTwin_Lは146/158px、レイヤー255は42/48px、100%は91/96px。下段の接続状態も欄内に収まります。
+- ユーザー実機でBLE受信、mode 3でのLCD描画、00 f8での色の正常化、前版UIの統合動作。
+- キーボード向けモジュールのローカルビルドは [MODULE_VALIDATION.md](MODULE_VALIDATION.md) を参照。
 
-このWindowsホスト試験ではAddressSanitizerは使用していません。Linux CIの `scripts/test-host.sh` はASan/UBSanを指定していますが、CI実行はGitHub接続後です。
+## 未確認・既知の制約
 
-YAMLとPowerShellスクリプトの構文も確認しました。`publish-private.ps1` の実際のリポジトリ作成／pushは認証がないため未実行です。
+最新配置自体の実機確認、長時間耐久・消費電流、全LCD／全キーボード／全ZMK forkでの互換性は未確認です。標準Zephyr SDK 0.17.0とGitHub Actionsの結果は、このローカルビルド結果とは別です。
 
-## ビルド時の注意表示
+USB VID/PIDはZephyr試験用。ELFのRWX LOAD segment警告があります。今回のローカル環境では独立したDTCによる追加検査は未実施ですが、Zephyrのbinding検証とCコンパイルは成功しています。
 
-- ZephyrのUSB試験用VID `0x2FE3` / PID `0x0100` を使用している旨の表示あり。頒布用の割り当ては未確定。
-- ASSERT有効の通知あり。試作の異常検出のため有効にしています。
-- GNU ld 2.41によるELFのLOAD segment RWX警告あり。ビルド成功・UF2生成を確認していますが、この警告を解消済みとはしていません。
-- 本環境ではDTC実行ファイルが見つからない旨の表示あり。ZephyrのPython devicetree生成・binding検証・Cコンパイルは完了。独立したDTC追加警告検査は未実施。標準手順／CIにはDTCの準備を記載しています。
-- Kconfigの未定義設定／依存不成立による警告、アプリCソースのコンパイル警告は最終構成では検出されませんでした。
-
-## 未実施
-
-実機への書き込み、LCD表示と色／オフセット／SPI modeの確定、実際のキーボード広告での相互運用、USB電源バンク動作、消費電流、数時間以上の耐久試験。キーボード側のZMKリポジトリが未提示なので、そのFWのビルド／変更も行っていません。
-
-上流ソースの形式との照合と合成fixtureの合格を、実際のBLE無線での互換性確認とは区別してください。実機チェックリストは `HARDWARE.md` にあります。
-
-GitHubは既存CLI認証がなく、利用可能なブラウザもサインイン画面でした。**GitHub上のリポジトリ作成・pushは未完了**。ローカルGitの `main` と配布ZIPを用意し、接続後にprivate属性を検査して作成・pushするスクリプトを同梱しています。
-
-## 導入資料・出自確認の追加
-
-`INSTALL.md` に既存キーボードへのモジュール追加、左右別設定、GitHub Actionsでの再ビルド、書き込み、確認、復元を追記しました。設定名とバッテリー取得経路はZMK v0.3.0のソースと現在の公式資料で照合しました。共通 `.conf` の選択は版によって違うため、読み込まれたファイルをログで確認する手順にしています。ユーザーの実際のキーボードで導入試験を行ったわけではありません。
-
-元のProspector hardware／firmwareも取得し、C／ヘッダー9ファイルの比較、LCD overlayの再利用元、ライセンスと謝辞を確認。結果と範囲は `SOURCE_AUDIT.md`、再現可能な比較結果は `reference-comparison.json` に保存しました。資料内のローカルリンク、YAML例、ソース指紋、UF2のSHA-256を確認しています。今回の追加ではFWの実行コードや書き込み用バイナリを変更していません。
-
-## ユーザー作成リポジトリへの移行
-
-2026-11-13: ユーザーが作成した `alektor-diy/zmk-satellite` のローカルチェックアウトへ、初期コミット・origin・著作権者名を保持して開発履歴を統合しました。上記のGitHub作成待ちは初回作成時点の記録です。移行時点でGitHubへのpushや公開範囲の変更は行っていません。ソース指紋と3種類のUF2のSHA-256を移行後にも照合しました。
-
-## キーボード向けモジュール
-
-同じリポジトリに既存ZMKへ導入する共通モジュールを追加しました。受信器FWとはビルド入口が別です。詳細は [MODULE_VALIDATION.md](MODULE_VALIDATION.md) を参照してください。受信器の実行コード・配線・UF2の機能は今回変更していません。
+導入・操作手順は [INSTALL.md](INSTALL.md)、ハードウェアの切り分けは [HARDWARE.md](HARDWARE.md)、出自とライセンスの確認は [SOURCE_AUDIT.md](SOURCE_AUDIT.md) を参照してください。[過去の開発記録](history/VALIDATION-2026-11.md) は現行の設定手順ではありません。
