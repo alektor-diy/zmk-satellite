@@ -33,19 +33,18 @@ The original hardware's canonical LICENSE is CERN-OHL-P v2, even where retained
 upstream attribution summaries describe the original hardware as MIT. Those
 summaries are preserved as received and do not replace the hardware repository's
 actual license. Original license texts are in `licenses/Original-Prospector-*`.
-The audit scope, source fingerprints and comparison limitations are documented in
-`docs/SOURCE_AUDIT.md` and `docs/reference-comparison.json`. This is an engineering
-provenance review, not a blanket legal clearance or a clean-room claim.
+The receiver was implemented after consulting upstream sources; this is not a
+clean-room claim.
 
 ## Firmware dependencies
 
-Exact revisions are in `west.yml` and `docs/dependencies-lock.yml`.
+Pinned source revisions are in `west.yml` and `module/west.yml`.
 
 | Component | License / role |
 |---|---|
 | Zephyr RTOS | Primarily Apache-2.0; individual files may carry other permissive SPDX licenses. Kernel, BLE host + open-source controller, USB CDC, ST7789, SPI, LVGL integration |
 | LVGL | MIT, graphics/widgets |
-| Montserrat font | SIL OFL 1.1; built-in LVGL 14/24px font |
+| Montserrat font | SIL OFL 1.1; built-in LVGL fonts |
 | Font Awesome 5 glyphs in LVGL built-in font | SIL OFL 1.1 font terms; font file includes symbols even though this UI uses ASCII |
 | CMSIS / CMSIS 6 | Apache-2.0, ARM device/core definitions; build dependency |
 | Nordic HAL / nrfx | nrfx/MDK files used here are BSD-3-Clause; Nordic integration files also include Nordic's 5-clause license. Target remains a Nordic nRF52840 IC |
