@@ -7,12 +7,14 @@
 #include <lvgl.h>
 #include <lvgl_zephyr.h>
 
-#define INK 0xe6edf3
-#define DIM 0x98abba
+#define INK 0xe8eff3
+#define DIM 0x9aafbb
 #define CYAN 0x68bdd5
 #define WARN 0xffb66e
-static lv_obj_t *name, *status, *layer_number, *host, *host_box;
-static lv_obj_t *battery[2], *fill[2];
+#define USB_COLOR 0xf3bb76
+
+static lv_obj_t *name, *status, *layer_number, *host, *host_icon, *endpoint_row;
+static lv_obj_t *battery[2], *unit[2], *ring[2];
 
 static lv_obj_t *label(lv_obj_t *parent, const char *text, int x, int y, int w,
                        const lv_font_t *font, uint32_t color)
@@ -27,15 +29,34 @@ static lv_obj_t *label(lv_obj_t *parent, const char *text, int x, int y, int w,
     return obj;
 }
 
-static lv_obj_t *rect(lv_obj_t *parent, int x, int y, int w, int h, uint32_t color)
+static lv_obj_t *center_label(lv_obj_t *parent, const char *text, int x, int y,
+                              int w, const lv_font_t *font, uint32_t color)
 {
-    lv_obj_t *obj = lv_obj_create(parent);
+    lv_obj_t *obj = label(parent, text, x, y, w, font, color);
+    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, 0);
+    return obj;
+}
+
+static lv_obj_t *battery_ring(lv_obj_t *screen, int x)
+{
+    lv_obj_t *obj = lv_arc_create(screen);
     lv_obj_remove_style_all(obj);
-    lv_obj_set_pos(obj, x, y);
-    lv_obj_set_size(obj, w, h);
-    lv_obj_set_style_bg_color(obj, lv_color_hex(color), 0);
-    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
-    lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_pos(obj, x, 90);
+    lv_obj_set_size(obj, 88, 88);
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_arc_width(obj, 4, LV_PART_MAIN);
+    lv_obj_set_style_arc_color(obj, lv_color_hex(0x30434e), LV_PART_MAIN);
+    lv_obj_set_style_arc_opa(obj, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_arc_rounded(obj, false, LV_PART_MAIN);
+    lv_obj_set_style_arc_width(obj, 4, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(obj, lv_color_hex(CYAN), LV_PART_INDICATOR);
+    lv_obj_set_style_arc_opa(obj, LV_OPA_COVER, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_rounded(obj, false, LV_PART_INDICATOR);
+    /* Full circle, clockwise from twelve o'clock. Zero has no indicator. */
+    lv_arc_set_bg_angles(obj, 0, 360);
+    lv_arc_set_rotation(obj, 270);
+    lv_arc_set_range(obj, 0, 100);
+    lv_arc_set_value(obj, 0);
     return obj;
 }
 
@@ -46,39 +67,49 @@ int sat_ui_init(void)
     int ret = lvgl_init();
     if (ret) return ret;
     lv_obj_t *screen = lv_screen_active();
-    lv_obj_set_style_bg_color(screen, lv_color_hex(0x101923), 0);
+    lv_obj_set_style_bg_color(screen, lv_color_hex(0x0d1820), 0);
     lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(screen, 0, 0);
     lv_obj_set_style_pad_all(screen, 0, 0);
     lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
-    /* Shared 14px outer margins; layer and battery columns end at x=226. */
-    label(screen, "ZMK SATELLITE", 14, 14, 212, &lv_font_montserrat_10, DIM);
-    name = label(screen, "Keyboard", 14, 44, 158, &lv_font_montserrat_24, INK);
-    lv_obj_t *layer_heading = label(screen, "LAYER", 178, 28, 48,
-                                    &lv_font_montserrat_12, DIM);
-    lv_obj_set_style_text_align(layer_heading, LV_TEXT_ALIGN_CENTER, 0);
-    layer_number = label(screen, "--", 178, 44, 48, &lv_font_montserrat_24, INK);
-    lv_obj_set_style_text_align(layer_number, LV_TEXT_ALIGN_CENTER, 0);
-    host_box = rect(screen, 14, 193, 55, 30, 0x24313c);
-    lv_obj_set_style_radius(host_box, 5, 0);
-    host = label(host_box, "--", 0, 0, 55, &lv_font_montserrat_18, DIM);
-    lv_obj_set_style_text_align(host, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(host, LV_ALIGN_CENTER, 0, 0);
-    status = label(screen, "WAITING FOR\nKEYBOARD", 81, 193, 145,
-                   &lv_font_montserrat_12, CYAN);
-    lv_label_set_long_mode(status, LV_LABEL_LONG_WRAP);
-    lv_obj_set_style_text_align(status, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align_to(status, host_box, LV_ALIGN_OUT_RIGHT_MID, 12, 0);
-    label(screen, "LEFT", 14, 101, 94, &lv_font_montserrat_12, DIM);
-    label(screen, "RIGHT", 132, 101, 94, &lv_font_montserrat_12, DIM);
+    lv_obj_t *brand = label(screen, "ZMK SATELLITE", 14, 14, 212,
+                            &lv_font_montserrat_10, DIM);
+    lv_obj_set_style_text_letter_space(brand, 1, 0);
+    name = label(screen, "Keyboard", 14, 35, 212, &lv_font_montserrat_24, INK);
+
+    /* Shared column centres at x=64 and x=176. */
     for (unsigned i = 0; i < 2; ++i) {
-        int x = i ? 132 : 14;
-        battery[i] = label(screen, "--", x, 121, 96, &lv_font_montserrat_36, INK);
-        lv_obj_t *track = rect(screen, x, 164, 94, 4, 0x2b3a46);
-        fill[i] = rect(track, 0, 0, 1, 4, CYAN);
-        lv_obj_add_flag(fill[i], LV_OBJ_FLAG_HIDDEN);
+        int x = i ? 124 : 12;
+        center_label(screen, i ? "RIGHT" : "LEFT", x, 76, 104,
+                     &lv_font_montserrat_10, 0xa5b7c1);
+        ring[i] = battery_ring(screen, x + 8);
+        battery[i] = center_label(screen, "--", x + 10, 109, 84,
+                                  &lv_font_montserrat_36, INK);
+        unit[i] = center_label(screen, "%", x + 10, 148, 84,
+                               &lv_font_montserrat_12, 0xa5b7c1);
+        lv_obj_add_flag(unit[i], LV_OBJ_FLAG_HIDDEN);
     }
-    rect(screen, 14, 183, 212, 1, 0x2d3c49);
+
+    center_label(screen, "LAYER", 12, 190, 104, &lv_font_montserrat_10, 0xa5b7c1);
+    layer_number = center_label(screen, "--", 12, 204, 104,
+                                &lv_font_montserrat_24, INK);
+    status = center_label(screen, "WAITING", 124, 190, 104,
+                          &lv_font_montserrat_10, CYAN);
+    endpoint_row = lv_obj_create(screen);
+    lv_obj_remove_style_all(endpoint_row);
+    lv_obj_set_pos(endpoint_row, 124, 203);
+    lv_obj_set_size(endpoint_row, 104, 29);
+    lv_obj_remove_flag(endpoint_row, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_flex_flow(endpoint_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(endpoint_row, LV_FLEX_ALIGN_CENTER,
+                         LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(endpoint_row, 5, 0);
+    /* Existing LVGL font symbols: Font Awesome notices are in licenses/. */
+    host_icon = label(endpoint_row, LV_SYMBOL_BLUETOOTH, 0, 0, LV_SIZE_CONTENT,
+                      &lv_font_montserrat_18, CYAN);
+    lv_obj_add_flag(host_icon, LV_OBJ_FLAG_HIDDEN);
+    host = label(endpoint_row, "--", 0, 0, LV_SIZE_CONTENT,
+                 &lv_font_montserrat_24, DIM);
     lv_timer_handler();
     return display_blanking_off(dev);
 }
@@ -91,20 +122,20 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
     if (!s->seen) return;
     bool online = sat_online(s, now, CONFIG_SATELLITE_TIMEOUT_MS);
     enum sat_host_status endpoint = sat_host_from_flags(s->packet.flags);
+    enum sat_bt_status bt_state = sat_bt_from_flags(s->packet.flags);
     bool usb = endpoint == SAT_HOST_USB;
     char text[32];
     if (usb) snprintf(text, sizeof(text), "USB");
     else snprintf(text, sizeof(text), "BT%u", s->packet.profile + 1);
     lv_label_set_text(host, text);
-    lv_obj_set_style_bg_color(host_box, lv_color_hex(usb ? 0x3d2d1c : 0x183744), 0);
-    lv_obj_set_style_text_color(host, lv_color_hex(!online ? DIM : usb ? 0xf3bb76 : CYAN), 0);
-    enum sat_bt_status bt_state = sat_bt_from_flags(s->packet.flags);
+    lv_label_set_text(host_icon, usb ? LV_SYMBOL_USB : LV_SYMBOL_BLUETOOTH);
+    lv_obj_remove_flag(host_icon, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_style_text_color(host, lv_color_hex(online ? INK : DIM), 0);
+    lv_obj_set_style_text_color(host_icon, lv_color_hex(!online ? DIM : usb ? USB_COLOR : CYAN), 0);
     const char *connection = endpoint == SAT_HOST_BOTH ? "BT + USB READY" :
-        usb ? "USB CONNECTED" :
-        bt_state == SAT_BT_CONNECTED ? "CONNECTED" :
-        bt_state == SAT_BT_PAIRED ? "PAIRED /\nDISCONNECTED" : "NOT PAIRED";
-    lv_label_set_text(status, !online ? "SIGNAL LOST /\nSTALE" : connection);
-    lv_obj_align_to(status, host_box, LV_ALIGN_OUT_RIGHT_MID, 12, 0);
+        usb || bt_state == SAT_BT_CONNECTED ? "CONNECTED" :
+        bt_state == SAT_BT_PAIRED ? "PAIRED / OFFLINE" : "NOT PAIRED";
+    lv_label_set_text(status, online ? connection : "SIGNAL LOST");
     uint32_t state_color = !online ? WARN : bt_state == SAT_BT_UNPAIRED && !usb ? 0xbdadf6 :
                            endpoint == SAT_HOST_OFFLINE ? WARN : CYAN;
     lv_obj_set_style_text_color(status, lv_color_hex(state_color), 0);
@@ -115,15 +146,14 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
             (values[i] == 0 && (i == 1 || s->packet.role == 1));
         bool low = !unknown && values[i] <= 10;
         if (unknown) snprintf(text, sizeof(text), "--");
-        else snprintf(text, sizeof(text), "%u%%", values[i]);
+        else snprintf(text, sizeof(text), "%u", values[i]);
         lv_label_set_text(battery[i], text);
         lv_obj_set_style_text_color(battery[i], lv_color_hex(!online ? DIM : low ? WARN : INK), 0);
-        if (unknown || values[i] == 0) lv_obj_add_flag(fill[i], LV_OBJ_FLAG_HIDDEN);
-        else {
-            lv_obj_remove_flag(fill[i], LV_OBJ_FLAG_HIDDEN);
-            lv_obj_set_width(fill[i], 94 * values[i] / 100);
-        }
-        lv_obj_set_style_bg_color(fill[i], lv_color_hex(!online ? DIM : low ? WARN : CYAN), 0);
+        if (unknown) lv_obj_add_flag(unit[i], LV_OBJ_FLAG_HIDDEN);
+        else lv_obj_remove_flag(unit[i], LV_OBJ_FLAG_HIDDEN);
+        lv_arc_set_value(ring[i], unknown ? 0 : values[i]);
+        lv_obj_set_style_arc_color(ring[i], lv_color_hex(!online ? DIM : low ? WARN : CYAN),
+                                   LV_PART_INDICATOR);
     }
     snprintf(text, sizeof(text), "%02u", s->packet.layer);
     lv_label_set_text(layer_number, text);
@@ -133,6 +163,6 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
 void sat_ui_error(const char *message)
 {
     lv_label_set_text(status, message);
-    lv_obj_align_to(status, host_box, LV_ALIGN_OUT_RIGHT_MID, 12, 0);
+    lv_obj_set_style_text_color(status, lv_color_hex(WARN), 0);
 }
 void sat_ui_tick(void) { lv_timer_handler(); }

@@ -2,16 +2,16 @@
   {
     "stage": "display",
     "file": "satellite-display.uf2",
-    "bytes": 814080,
-    "sha256": "03689f90638838ebe4525849646a5b9738652efcc04cf154c461e1ccb60e0ae7",
-    "flash": 406792,
+    "bytes": 814592,
+    "sha256": "274be8efef53f145632817edcf4a9bcab38e2f9a97f51aba2f617602f2e1863b",
+    "flash": 407116,
     "ram": 71488,
-    "blocks": 1590,
+    "blocks": 1591,
     "start": "0x27000",
     "family": "0xADA52840",
     "spi_mode": 3,
     "ram_param": "00 f8",
-    "ui": "battery-compact-number-only"
+    "ui": "battery-rings-icons"
   },
   {
     "stage": "ble",
@@ -27,15 +27,15 @@
   {
     "stage": "status",
     "file": "satellite-status.uf2",
-    "bytes": 891904,
-    "sha256": "15e1acea1d635b0e41d28446c4492fe63c6d028496641d7ac29df410cce158a5",
-    "flash": 445736,
+    "bytes": 892416,
+    "sha256": "7c6927c6ee5a5d2753e80bdade97cd520b8fa624de72bf43da630ceb04045584",
+    "flash": 446064,
     "ram": 82668,
-    "blocks": 1742,
+    "blocks": 1743,
     "start": "0x27000",
     "family": "0xADA52840",
     "spi_mode": 3,
     "ram_param": "00 f8",
-    "ui": "battery-compact-number-only"
+    "ui": "battery-rings-icons"
   }
 ]
