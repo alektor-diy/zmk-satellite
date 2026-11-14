@@ -38,7 +38,7 @@ XIAOをUSB接続し、リセットを素早く2回操作して表示されるド
       import: module/west.yml
 ```
 
-適用される共通 `.conf`（iOraなら `config/iora.conf`）に1行追加します。
+適用される共通 `.conf` に1行追加します。
 
 ```conf
 CONFIG_ZMK_SATELLITE=y
@@ -60,8 +60,4 @@ BTは接続中・ペアリング済み未接続・未ペアリングを区別し
 
 本プロジェクトは[MITライセンス](LICENSE)です。依存物のライセンス・著作権表示は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)と[licenses/](licenses/)に収録しています。バイナリ配布時も同梱してください。
 
-[Prospector（carrefinho氏）](https://github.com/carrefinho/prospector)、[Prospector Scanner（t-ogura氏）](https://github.com/t-ogura/zmk-config-prospector)、[Prospector ZMK Module](https://github.com/t-ogura/prospector-zmk-module)を参考にしました。構想と実装資料を公開された皆様に感謝します。
-
-表示器のアプリは独立実装で、元のFWを丸ごとコピーしたものではありません。キーボード側はMITのProspector送信実装を依存物として利用し、液晶初期化設定はZephyr由来です。元の基板・ケース設計は使用していません。
-
-ZMK、Zephyr、LVGLと各依存プロジェクトの開発者にも感謝します。ZMKおよびProspectorの公式製品ではありません。
+[Prospector（carrefinho氏）](https://github.com/carrefinho/prospector)、[Prospector Scanner（t-ogura氏）](https://github.com/t-ogura/zmk-config-prospector)、[Prospector ZMK Module](https://github.com/t-ogura/prospector-zmk-module)を参考にしました。構想と実装資料を公開された皆様に感謝します。 
