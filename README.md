@@ -8,7 +8,7 @@ Prospector互換のBLE広告を受信するため、キーボードとのペア�
 
 ## 導入方法
 
-GitHub Actionsの成果物は、通常版 `satellite`、表示デモ `satellite_demo`、BLE診断版 `satellite_debug` です。各ZIPを展開すると同名のUF2だけが入っています。ライセンス通知は別の `licenses` 成果物にまとめています。
+GitHub Actionsの成果物は、通常版 `satellite`、表示デモ `satellite_demo`、BLE診断版 `satellite_debug` です。各ZIPを展開すると同名のUF2だけが入っています。ライセンス通知はリポジトリ内の `THIRD_PARTY_NOTICES.md` と `licenses/` を参照してください。
 
 ### 1. 表示器を組み立てる
 
