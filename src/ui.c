@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: MIT */
 #include "ui.h"
+#include "satellite_indicator.h"
 #include <stdio.h>
 #include <errno.h>
 #include <zephyr/device.h>
@@ -75,7 +76,9 @@ int sat_ui_init(void)
     lv_obj_t *brand = label(screen, "ZMK SATELLITE", 14, 14, 212,
                             &lv_font_montserrat_10, DIM);
     lv_obj_set_style_text_letter_space(brand, 1, 0);
-    name = label(screen, "Keyboard", 14, 35, 212, &lv_font_montserrat_24, INK);
+    name = label(screen, "Keyboard", 14, 34, 158, &lv_font_montserrat_24, INK);
+
+    sat_indicator_init(screen);
 
     /* Shared column centres at x=64 and x=176. */
     for (unsigned i = 0; i < 2; ++i) {
@@ -119,15 +122,17 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
     const char *title = CONFIG_SATELLITE_KEYBOARD_NAME[0] ?
         CONFIG_SATELLITE_KEYBOARD_NAME : s->keyboard_name[0] ? s->keyboard_name : "Keyboard";
     lv_label_set_text(name, title);
-    if (!s->seen) return;
+    if (!s->seen) { sat_indicator_receiving(false); return; }
     bool online = sat_online(s, now, CONFIG_SATELLITE_TIMEOUT_MS);
+    sat_indicator_receiving(online);
     enum sat_host_status endpoint = sat_host_from_flags(s->packet.flags);
     enum sat_bt_status bt_state = sat_bt_from_flags(s->packet.flags);
     bool usb = endpoint == SAT_HOST_USB;
     char text[32];
     if (usb) snprintf(text, sizeof(text), "USB");
-    else snprintf(text, sizeof(text), "BT%u", s->packet.profile + 1);
+    else snprintf(text, sizeof(text), "BT %u", s->packet.profile + 1);
     lv_label_set_text(host, text);
+    lv_obj_set_x(endpoint_row, usb ? 124 : 121);
     lv_label_set_text(host_icon, usb ? LV_SYMBOL_USB : LV_SYMBOL_BLUETOOTH);
     lv_obj_remove_flag(host_icon, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_style_text_color(host, lv_color_hex(online ? INK : DIM), 0);
@@ -162,6 +167,7 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
 
 void sat_ui_error(const char *message)
 {
+    sat_indicator_receiving(false);
     lv_label_set_text(status, message);
     lv_obj_set_style_text_color(status, lv_color_hex(WARN), 0);
 }
