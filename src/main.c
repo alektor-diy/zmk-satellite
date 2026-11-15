@@ -74,14 +74,15 @@ int main(void)
 #endif
 #ifdef CONFIG_SATELLITE_DISPLAY_TEST
         struct sat_packet p = {.version = 0x22, .battery_left = 76,
-            .battery_right = 65, .role = 1, .profile = 2, .flags = 0x10,
+            .battery_right = 65, .role = (now / 25000) % 2 ? 0 : 1,
+            .profile = 2, .flags = 0x10,
             .layer = (now / 3000) % 5, .id = {0x12,0x34,0x56,0x78}};
         const char *demo_layers[] = {"BASE", "NAV", "NUM", "ADJ", "Auto"};
         snprintf(p.layer_name, sizeof(p.layer_name), "%s", demo_layers[p.layer]);
         const uint8_t demo_flags[] = {0x30, 0x20, 0x00, 0x08, 0x38};
         p.flags = demo_flags[(now / 3000) % 5];
         memcpy(state.keyboard_name, "Demo board", 11);
-        /* 15s live simulation, then simulated loss; repeats every 25s. */
+        /* Alternate split/standalone every 25s: 15s live, then simulated loss. */
         if (now % 25000 < 15000)
             sat_update(&state, &p, -48, now, 0, NULL);
 #endif
