@@ -66,6 +66,8 @@ CONFIG_ZMK_SATELLITE=y
 
 ## ライセンスと謝辞
 
-本プロジェクトは[MITライセンス](LICENSE)です。依存物のライセンス・著作権表示は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)と[licenses/](licenses/)に収録しています。バイナリ配布時も同梱してください。
+本プロジェクトは[MITライセンス](LICENSE)です。  
+依存物のライセンス・著作権表示は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)と[licenses/](licenses/)に収録しています。
 
-[Prospector（carrefinho氏）](https://github.com/carrefinho/prospector)、[Prospector Scanner（t-ogura氏）](https://github.com/t-ogura/zmk-config-prospector)、[Prospector ZMK Module](https://github.com/t-ogura/prospector-zmk-module)を参考にしました。構想と実装資料を公開された皆様に感謝します。
+[Prospector（carrefinho氏）](https://github.com/carrefinho/prospector)、[Prospector Scanner（t-ogura氏）](https://github.com/t-ogura/zmk-config-prospector)、[Prospector ZMK Module](https://github.com/t-ogura/prospector-zmk-module)を参考にしました。  
+構想と実装資料を公開してくださった皆様に感謝いたします。
