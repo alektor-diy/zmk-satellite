@@ -1,7 +1,7 @@
 [
   {
     "stage": "display",
-    "file": "satellite-display.uf2",
+    "file": "satellite_demo.uf2",
     "bytes": 817664,
     "sha256": "b8461bb8e0d66c35fe7d6c22cc77fb4091d2caf902a417727fac0d811ce9cb8f",
     "flash": 408680,
@@ -19,7 +19,7 @@
   },
   {
     "stage": "ble",
-    "file": "satellite-ble.uf2",
+    "file": "satellite_debug.uf2",
     "bytes": 229376,
     "sha256": "b73bd120c58befce4e2218eb8ae65fb52cfe6e084bb5f82552eb75afc6a31488",
     "flash": 114448,
@@ -30,7 +30,7 @@
   },
   {
     "stage": "status",
-    "file": "satellite-status.uf2",
+    "file": "satellite.uf2",
     "bytes": 895488,
     "sha256": "a09d89630993c8075d4ee6c1fda7485da5827858359f9ec6aa3119869a255ef3",
     "flash": 447628,

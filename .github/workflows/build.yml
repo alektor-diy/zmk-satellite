@@ -11,12 +11,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sh scripts/test-host.sh
+      - name: Upload license notices
+        uses: actions/upload-artifact@v4
+        with:
+          name: licenses
+          if-no-files-found: error
+          path: |
+            LICENSE
+            THIRD_PARTY_NOTICES.md
+            licenses/
   firmware:
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        stage: [display, ble, status]
+        include:
+          - stage: status
+            artifact: satellite
+          - stage: display
+            artifact: satellite_demo
+          - stage: ble
+            artifact: satellite_debug
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,14 +51,12 @@ jobs:
           west sdk install --version 0.17.0 --toolchains arm-zephyr-eabi
       - name: Build XIAO firmware
         run: west build -b xiao_ble/nrf52840 zmk-satellite -d build -- -DSATELLITE_STAGE=${{ matrix.stage }}
+      - name: Prepare firmware download
+        run: |
+          mkdir -p artifacts
+          cp build/zephyr/zephyr.uf2 "artifacts/${{ matrix.artifact }}.uf2"
       - uses: actions/upload-artifact@v4
         with:
-          name: satellite-${{ matrix.stage }}
-          path: |
-            build/zephyr/zephyr.uf2
-            build/zephyr/zephyr.elf
-            build/zephyr/zephyr.map
-            build/zephyr/.config
-            build/zephyr/zephyr.dts
-            zmk-satellite/licenses/
-            zmk-satellite/THIRD_PARTY_NOTICES.md
+          name: ${{ matrix.artifact }}
+          path: artifacts/${{ matrix.artifact }}.uf2
+          if-no-files-found: error
