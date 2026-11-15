@@ -1,16 +1,18 @@
 # Third-party notices
 
-This application was implemented independently. It is not an official ZMK,
+The standalone receiver application was implemented independently. It is not an official ZMK,
 Prospector, Seeed, or Zephyr product. No Prospector UI code, images, fonts or
 hardware drawings are bundled. No ZMK application code is linked into the scanner.
 
-## Reference projects and keyboard-only dependency
+## Reference projects and bundled keyboard sender
 
 The standalone receiver does not link Prospector's sender. The keyboard module
-in `module/` intentionally compiles the pinned upstream MIT sender through a
-small adapter. It preserves its copyright in a generated source and makes only
-the documented init, side selection, optional interval and idle-name fixes.
-It does not use the former iOra-specific event-driven sender.
+contains sender code, its protocol header and sender-only Kconfig definitions
+derived from the MIT Prospector snapshot below. These are now maintained inside
+Satellite, including Zephyr compatibility, side selection, optional intervals,
+idle-name handling and HID advertising/profile-switch fixes. Original copyright
+notices are retained in source and licenses/Prospector-Module.txt. No Prospector
+repository is fetched and no upstream source is rewritten during a build.
 
 - `carrefinho/prospector`, commit
   `19ab80f9e656592b9d0319ecfb9c35bf9c5e10dd`, CERN-OHL-P v2.
@@ -24,10 +26,10 @@ It does not use the former iOra-specific event-driven sender.
   `391cd16a33ca0e2b62199d298273ed36cc6de2f9`, MIT.
 - `t-ogura/prospector-zmk-module`, v2.2.3 commit
   `72a71aeea816eb0f86ffc5b108b267076ce5f0af`, MIT.
-  Used to verify byte layout, advertisement transport, keyboard requirements,
-  version/profile masking, channel rules, and sender-side left/right placement.
-  Its original notices are retained in `licenses/Prospector-*.txt` for provenance.
-  The keyboard-side module remains a separate dependency of the user's ZMK build.
+  Base snapshot for the bundled sender in module/sender.c, the protocol and
+  compatibility headers, and module/Kconfig.sender. Local modifications are
+  maintained by Satellite. Its original notices are retained in
+  `licenses/Prospector-*.txt`; no build-time access to that repository is needed.
 
 The original hardware's canonical LICENSE is CERN-OHL-P v2, even where retained
 upstream attribution summaries describe the original hardware as MIT. Those
@@ -38,7 +40,8 @@ clean-room claim.
 
 ## Firmware dependencies
 
-Pinned source revisions are in `west.yml` and `module/west.yml`.
+External dependency revisions are in `west.yml`. The bundled sender base
+revision is recorded above; module/west.yml is an empty compatibility import.
 
 | Component | License / role |
 |---|---|

@@ -8,7 +8,7 @@ menuconfig ZMK_SATELLITE
     help
       Enable in a shared keyboard .conf. Only the central or standalone
       keyboard advertises; split peripherals retain battery reporting.
-      Requires the module/west.yml import to fetch Prospector definitions.
+      The sender and its configuration are bundled; no Prospector fetch is required.
 
 if ZMK_SATELLITE && (ZMK_SPLIT_ROLE_CENTRAL || !ZMK_SPLIT)
 
@@ -33,3 +33,5 @@ config ZMK_SATELLITE_CENTRAL_SIDE
       specify LEFT/RIGHT/AUX only if the automatic choice is inappropriate.
 
 endif
+
+rsource "Kconfig.sender"

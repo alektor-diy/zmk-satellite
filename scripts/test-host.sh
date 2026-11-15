@@ -6,3 +6,5 @@ ${CC:-cc} -std=c11 -Wall -Wextra -Werror -Isrc \
   -fsanitize=address,undefined -fno-omit-frame-pointer \
   tests/test_protocol.c src/protocol.c src/state.c -o build-host/test_protocol
 ./build-host/test_protocol
+
+python3 tests/test_advertising.py --cc "${CC:-cc}" --sanitize
