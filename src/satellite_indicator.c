@@ -99,7 +99,7 @@ void sat_indicator_init(lv_obj_t *parent)
     lv_obj_set_size(icon, 60, 44);
     lv_obj_remove_flag(icon, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_event_cb(icon, draw, LV_EVENT_DRAW_MAIN, NULL);
-    timer = lv_timer_create(animate, 83, NULL); /* Approximately 12 fps. */
+    timer = lv_timer_create(animate, 250, NULL); /* 4 fps; prioritize status responsiveness. */
     lv_timer_pause(timer);
 }
 
