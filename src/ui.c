@@ -15,7 +15,8 @@
 #define USB_COLOR 0xf3bb76
 
 static lv_obj_t *name, *status, *layer_number, *host, *host_icon, *endpoint_row;
-static lv_obj_t *battery[2], *unit[2], *ring[2];
+static lv_obj_t *battery[2], *unit[2], *ring[2], *battery_caption[2];
+static int battery_layout = -1;
 
 static lv_obj_t *label(lv_obj_t *parent, const char *text, int x, int y, int w,
                        const lv_font_t *font, uint32_t color)
@@ -61,6 +62,27 @@ static lv_obj_t *battery_ring(lv_obj_t *screen, int x)
     return obj;
 }
 
+static void set_battery_layout(bool standalone)
+{
+    if (battery_layout == (int)standalone) return;
+    battery_layout = standalone;
+    /* Reuse the first ring; only change geometry when the keyboard role changes. */
+    lv_obj_set_pos(ring[0], standalone ? 68 : 20, standalone ? 78 : 90);
+    lv_obj_set_size(ring[0], standalone ? 104 : 88, standalone ? 104 : 88);
+    lv_obj_set_pos(battery[0], standalone ? 68 : 22, standalone ? 100 : 109);
+    lv_obj_set_width(battery[0], standalone ? 104 : 84);
+    lv_obj_set_style_text_font(battery[0], standalone ? &lv_font_montserrat_44 :
+                              &lv_font_montserrat_36, 0);
+    lv_obj_set_pos(unit[0], standalone ? 68 : 22, 148);
+    lv_obj_set_width(unit[0], standalone ? 104 : 84);
+    lv_obj_t *split_only[] = {battery_caption[0], battery_caption[1],
+                              ring[1], battery[1], unit[1]};
+    for (unsigned i = 0; i < sizeof(split_only) / sizeof(split_only[0]); ++i) {
+        if (standalone) lv_obj_add_flag(split_only[i], LV_OBJ_FLAG_HIDDEN);
+        else lv_obj_remove_flag(split_only[i], LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
 int sat_ui_init(void)
 {
     const struct device *dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
@@ -83,8 +105,8 @@ int sat_ui_init(void)
     /* Shared column centres at x=64 and x=176. */
     for (unsigned i = 0; i < 2; ++i) {
         int x = i ? 124 : 12;
-        center_label(screen, i ? "RIGHT" : "LEFT", x, 76, 104,
-                     &lv_font_montserrat_10, 0xa5b7c1);
+        battery_caption[i] = center_label(screen, i ? "RIGHT" : "LEFT", x, 76, 104,
+                                          &lv_font_montserrat_10, 0xa5b7c1);
         ring[i] = battery_ring(screen, x + 8);
         battery[i] = center_label(screen, "--", x + 10, 109, 84,
                                   &lv_font_montserrat_36, INK);
@@ -123,6 +145,8 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
         CONFIG_SATELLITE_KEYBOARD_NAME : s->keyboard_name[0] ? s->keyboard_name : "Keyboard";
     lv_label_set_text(name, title);
     if (!s->seen) { sat_indicator_receiving(false); return; }
+    const bool standalone = s->packet.role == 0;
+    set_battery_layout(standalone);
     bool online = sat_online(s, now, CONFIG_SATELLITE_TIMEOUT_MS);
     sat_indicator_receiving(online);
     enum sat_host_status endpoint = sat_host_from_flags(s->packet.flags);
@@ -146,8 +170,8 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
     lv_obj_set_style_text_color(status, lv_color_hex(state_color), 0);
     uint8_t values[2] = {s->packet.battery_left, s->packet.battery_right};
     for (unsigned i = 0; i < 2; ++i) {
+        if (standalone && i == 1) continue;
         bool unknown = values[i] > 100 ||
-            (i == 1 && s->packet.role == 0) ||
             (values[i] == 0 && (i == 1 || s->packet.role == 1));
         bool low = !unknown && values[i] <= 10;
         if (unknown) snprintf(text, sizeof(text), "--");

@@ -2,11 +2,11 @@
   {
     "stage": "display",
     "file": "satellite_demo.uf2",
-    "bytes": 817664,
-    "sha256": "b8461bb8e0d66c35fe7d6c22cc77fb4091d2caf902a417727fac0d811ce9cb8f",
-    "flash": 408680,
+    "bytes": 985088,
+    "sha256": "2071662804928172c22fc98e43d89c10068b01cd794e83a46c4baf8d2946006d",
+    "flash": 492440,
     "ram": 71552,
-    "blocks": 1597,
+    "blocks": 1924,
     "start": "0x27000",
     "family": "0xADA52840",
     "spi_mode": 3,
@@ -15,7 +15,8 @@
     "indicator_period_ms": 6000,
     "indicator_timeout_ms": 5000,
     "indicator_fps": 4,
-    "indicator_frame_interval_ms": 250
+    "indicator_frame_interval_ms": 250,
+    "battery_layout": "automatic-standalone-or-split"
   },
   {
     "stage": "ble",
@@ -31,11 +32,11 @@
   {
     "stage": "status",
     "file": "satellite.uf2",
-    "bytes": 895488,
-    "sha256": "a09d89630993c8075d4ee6c1fda7485da5827858359f9ec6aa3119869a255ef3",
-    "flash": 447628,
+    "bytes": 1062912,
+    "sha256": "c9e22abbd3bd0d08f31c2caa0698599347438c7601c86094239bfb95de88aa33",
+    "flash": 531372,
     "ram": 82668,
-    "blocks": 1749,
+    "blocks": 2076,
     "start": "0x27000",
     "family": "0xADA52840",
     "spi_mode": 3,
@@ -44,6 +45,7 @@
     "indicator_period_ms": 6000,
     "indicator_timeout_ms": 95000,
     "indicator_fps": 4,
-    "indicator_frame_interval_ms": 250
+    "indicator_frame_interval_ms": 250,
+    "battery_layout": "automatic-standalone-or-split"
   }
 ]
