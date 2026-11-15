@@ -1,10 +1,10 @@
 # ZMK Satellite
 
-## これはなにか
+## 概要
 
 ZMKキーボードの状態を表示する、XIAO nRF52840＋240×240 ST7789液晶用のファームウェアです。キーボード名、左右のリング型バッテリー表示、レイヤー番号、BT1〜BT5／USBと接続状態を表示します。
 
-Prospector互換のBLE広告を受信するため、キーボードとのペアリングは不要です。USB-Cで給電します。
+Prospector互換のBLE広告を受信するため、キーボードとのペアリングは不要です。
 
 ## 導入方法
 
@@ -35,8 +35,9 @@ XIAOをUSB接続し、リセットを素早く2回操作して表示されるド
       url: https://github.com/alektor-diy/zmk-satellite
       revision: main
       path: modules/zmk-satellite
-      import: module/west.yml
 ```
+
+`revision: main` を指定し、Satelliteのmainに反映された最新版を利用します。更新時もキーボード用FWを再ビルドしてください。ローカルビルドでは先に `west update zmk-satellite` を実行します。
 
 適用される共通 `.conf` に1行追加します。
 
@@ -45,6 +46,8 @@ CONFIG_ZMK_SATELLITE=y
 ```
 
 普段どおりキーボード用FWをビルドして書き込みます。分割キーボードは左右とも更新してください。
+
+ペアリング候補にキーボードが表示されない場合は、接続先機器のBluetoothを一度OFFにしてから、再度ONにしてください。
 
 ### 3. 状態を表示する
 
@@ -60,4 +63,4 @@ BTは接続中・ペアリング済み未接続・未ペアリングを区別し
 
 本プロジェクトは[MITライセンス](LICENSE)です。依存物のライセンス・著作権表示は[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)と[licenses/](licenses/)に収録しています。バイナリ配布時も同梱してください。
 
-[Prospector（carrefinho氏）](https://github.com/carrefinho/prospector)、[Prospector Scanner（t-ogura氏）](https://github.com/t-ogura/zmk-config-prospector)、[Prospector ZMK Module](https://github.com/t-ogura/prospector-zmk-module)を参考にしました。構想と実装資料を公開された皆様に感謝します。 
+[Prospector（carrefinho氏）](https://github.com/carrefinho/prospector)、[Prospector Scanner（t-ogura氏）](https://github.com/t-ogura/zmk-config-prospector)、[Prospector ZMK Module](https://github.com/t-ogura/prospector-zmk-module)を参考にしました。構想と実装資料を公開された皆様に感謝します。

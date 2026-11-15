@@ -1,0 +1,269 @@
+# SPDX-License-Identifier: MIT
+# Sender-only definitions derived from t-ogura/prospector-zmk-module
+# 72a71aeea816eb0f86ffc5b108b267076ce5f0af. Original MIT notice is retained
+# in licenses/Prospector-Module.txt. Legacy symbol names preserve config compatibility.
+
+config ZMK_STATUS_ADVERTISEMENT
+    bool "Enable ZMK Status Advertisement"
+    default n
+    depends on ZMK_BLE
+    select HWINFO
+    help
+      Enable broadcasting of keyboard status information via BLE Advertisement.
+      This allows external devices to receive status updates without establishing
+      a connection to the keyboard.
+      Uses legacy advertising API - no BT_EXT_ADV needed.
+
+config ZMK_STATUS_ADV_INTERVAL_MS
+    int "Status advertisement interval in milliseconds"
+    range 100 10000
+    default 1000
+    depends on ZMK_STATUS_ADVERTISEMENT
+    help
+      Interval between status advertisement broadcasts in milliseconds.
+      Lower values provide more frequent updates but consume more battery.
+
+config PROSPECTOR_EXPECTED_PERIPHERAL_COUNT
+    int "Number of split peripherals expected for 'fully connected' state"
+    range 0 3
+    default 1 if ZMK_SPLIT_ROLE_CENTRAL
+    default 0
+    depends on ZMK_STATUS_ADVERTISEMENT
+    help
+      How many split peripherals must be connected before prospector treats
+      the keyboard as fully connected. While fewer than this many peripherals
+      are connected, prospector switches to a burst/silent cycle (see
+      PROSPECTOR_SPLIT_PARTIAL_BURST_MS / _SILENT_MS) so the central's
+      scan/connect can run without contention from prospector adv.
+
+      Defaults:
+        ZMK_SPLIT_ROLE_CENTRAL=y -> 1 (typical split keyboard, central+1)
+        otherwise                -> 0 (no peripherals expected; cycle never
+                                       engages, prospector behaves as in
+                                       prior versions)
+
+      Override in keyboard config for multi-peripheral builds (e.g. a split
+      keyboard with right half + trackball = 2). Range 0-3.
+
+config PROSPECTOR_SPLIT_PARTIAL_BURST_MS
+    int "Burst window during split partial state (ms)"
+    range 100 10000
+    default 200
+    depends on ZMK_STATUS_ADVERTISEMENT && ZMK_SPLIT_ROLE_CENTRAL
+    help
+      While the split central is still bringing up peripherals (count <
+      PROSPECTOR_EXPECTED_PERIPHERAL_COUNT), prospector cycles between a
+      short BURST window (this duration, fast 100-150ms adv interval) and
+      a longer SILENT window (PROSPECTOR_SPLIT_PARTIAL_SILENT_MS, adv set
+      released entirely). This prioritises peripheral discovery over
+      scanner visibility.
+
+      Default 200ms: long enough to fit 1-2 fast adv events given the
+      BLE-spec ADV_NONCONN_IND minimum interval of 100ms plus advDelay
+      0-10ms. Going below ~150ms risks zero adv events per burst.
+
+config PROSPECTOR_SPLIT_PARTIAL_SILENT_MS
+    int "Silent window during split partial state (ms)"
+    range 300 60000
+    default 1800
+    depends on ZMK_STATUS_ADVERTISEMENT && ZMK_SPLIT_ROLE_CENTRAL
+    help
+      Duration of the silent window in the burst/silent cycle (see
+      PROSPECTOR_SPLIT_PARTIAL_BURST_MS). During this window prospector
+      stops its own adv entirely so the controller's radio scheduler is
+      free to handle the central's scan and CONNECT_REQ tx without
+      collision.
+
+      Default 1800ms: with peripheral adv at ~100ms interval the central
+      has ~18 uncontested CONNECT_REQ opportunities, with comfortable
+      headroom for LL connection setup (50-100ms).
+
+      With BURST=200 and SILENT=1800, prospector adv is on 10% of the
+      time during split startup -- "see it if you're lucky" UX in trade
+      for rock-solid peripheral connect.
+
+config ZMK_STATUS_ADV_KEYBOARD_NAME
+    string "Keyboard name for status advertisement"
+    default ""
+    depends on ZMK_STATUS_ADVERTISEMENT
+    help
+      Name to identify this keyboard in status advertisements.
+      If set, also overrides the BLE device name (CONFIG_BT_DEVICE_NAME)
+      so that scanners and PCs display this name.
+      If empty, the BLE device name is used as-is.
+
+config PROSPECTOR_CHANNEL
+    int "Prospector channel number (0-255)"
+    range 0 255
+    default 0
+    depends on ZMK_STATUS_ADVERTISEMENT
+    help
+      Channel number for Prospector scanner pairing.
+      0 = Broadcast to all scanners (default, maximum compatibility)
+      1-255 = Specific channel for dedicated scanner pairing
+
+      Use this to prevent interference when multiple keyboards and
+      scanners are in the same area. Set the same channel number on
+      both keyboard and scanner to create a dedicated pair.
+
+config ZMK_STATUS_ADV_ACTIVITY_BASED
+    bool "Enable activity-based advertisement intervals"
+    default y
+    depends on ZMK_STATUS_ADVERTISEMENT
+    help
+      Enable dynamic advertisement intervals based on keyboard activity.
+      High frequency during key presses, low frequency during idle periods.
+
+config ZMK_STATUS_ADV_ACTIVE_INTERVAL_MS
+    int "Active advertisement interval in milliseconds"
+    range 100 1000
+    default 200
+    depends on ZMK_STATUS_ADV_ACTIVITY_BASED
+    help
+      Advertisement interval when keyboard is active (keys being pressed).
+      200ms = 5Hz for responsive status updates.
+
+config ZMK_STATUS_ADV_IDLE_INTERVAL_MS
+    int "Idle advertisement interval in milliseconds"
+    range 500 300000
+    default 30000
+    depends on ZMK_STATUS_ADV_ACTIVITY_BASED
+    help
+      Advertisement interval when keyboard is idle.
+      30000ms (30 seconds) default for significant battery conservation.
+      Can be set up to 300000ms (5 minutes) for maximum battery saving.
+      Scanner timeout should be set longer than this value.
+
+config ZMK_STATUS_ADV_ACTIVITY_TIMEOUT_MS
+    int "Activity timeout in milliseconds"
+    range 1000 300000
+    default 5000
+    depends on ZMK_STATUS_ADV_ACTIVITY_BASED
+    help
+      Time to wait before switching from active to idle mode.
+      Can be set up to 300000ms (5 minutes) for extended active periods.
+      5000ms = 5 seconds default prevents frequent mode switching during brief pauses.
+
+config ZMK_STATUS_ADV_CENTRAL_SIDE
+    string "Physical side of central device in split keyboard"
+    default "RIGHT"
+    depends on ZMK_STATUS_ADVERTISEMENT && ZMK_SPLIT
+    help
+      Specify which physical side the central device is on.
+      RIGHT: Central is on the right side (default - most split keyboards)
+      LEFT: Central is on the left side (e.g. some keyboards like Sweep)
+      AUX: Central is neither keyboard half (e.g. a trackball or other
+      auxiliary unit acting as split central). Both halves are then
+      peripherals: LEFT_PERIPHERAL fills the left battery slot,
+      RIGHT_PERIPHERAL fills the right battery slot, and the central's
+      own battery is shown in the Aux1 slot.
+      This determines the battery display position in scanner devices.
+
+      IMPORTANT for AUX: an AUX central has at least 2 split peripherals
+      (both halves), but PROSPECTOR_EXPECTED_PERIPHERAL_COUNT defaults
+      to 1. Set it to your actual peripheral count (e.g. 2), otherwise
+      the burst/silent startup protection disengages after the first
+      half connects and the second half may connect slowly.
+      Also keep LEFT_PERIPHERAL, RIGHT_PERIPHERAL and AUX2_PERIPHERAL
+      set to three distinct indices - overlapping values display the
+      same peripheral twice and hide another.
+
+config ZMK_STATUS_ADV_LEFT_PERIPHERAL
+    int "Peripheral index for LEFT half (CENTRAL_SIDE=AUX only)"
+    default 0
+    range 0 2
+    depends on ZMK_STATUS_ADVERTISEMENT && ZMK_SPLIT
+    help
+      When CENTRAL_SIDE is "AUX", which peripheral index is the LEFT
+      keyboard half. Default is 0 (first connected peripheral).
+      Adjust if the peripheral connection order doesn't match the
+      physical layout.
+
+config ZMK_STATUS_ADV_RIGHT_PERIPHERAL
+    int "Peripheral index for RIGHT half (CENTRAL_SIDE=AUX only)"
+    default 1
+    range 0 2
+    depends on ZMK_STATUS_ADVERTISEMENT && ZMK_SPLIT
+    help
+      When CENTRAL_SIDE is "AUX", which peripheral index is the RIGHT
+      keyboard half. Default is 1 (second connected peripheral).
+
+config ZMK_STATUS_ADV_HALF_PERIPHERAL
+    int "Peripheral index for the other keyboard half"
+    default 0
+    range 0 2
+    depends on ZMK_STATUS_ADVERTISEMENT && ZMK_SPLIT
+    help
+      Which peripheral index to display in the keyboard half slot
+      (opposite side of central). Default is 0 (first connected peripheral).
+
+      Use this when the peripheral connection order doesn't match the
+      physical keyboard layout (e.g., after settings_reset, trackball
+      connected before the keyboard half).
+
+config ZMK_STATUS_ADV_AUX1_PERIPHERAL
+    int "Peripheral index for Aux1 slot"
+    default 1
+    range 0 2
+    depends on ZMK_STATUS_ADVERTISEMENT && ZMK_SPLIT
+    help
+      Which peripheral index to display in the Aux1 slot.
+      Typically used for trackball or additional peripheral device.
+      Default is 1 (second connected peripheral).
+
+config ZMK_STATUS_ADV_AUX2_PERIPHERAL
+    int "Peripheral index for Aux2 slot"
+    default 2
+    range 0 2
+    depends on ZMK_STATUS_ADVERTISEMENT && ZMK_SPLIT
+    help
+      Which peripheral index to display in the Aux2 slot.
+      Default is 2 (third connected peripheral).
+
+config ZMK_STATUS_ADV_WPM_WINDOW_SECONDS
+    int "WPM calculation window in seconds"
+    range 5 120
+    default 30
+    depends on ZMK_STATUS_ADVERTISEMENT
+    help
+      Time window for WPM (Words Per Minute) calculation in seconds.
+      Shorter windows (5-15s) provide more responsive updates to current typing speed.
+      Longer windows (30-60s) provide more stable, averaged WPM values.
+      Default is 30 seconds. The multiplier is automatically calculated as (60 / window).
+      Examples:
+      - 10 seconds: Very responsive, 6x multiplier
+      - 30 seconds: Balanced, 2x multiplier (default)
+      - 60 seconds: Traditional 1-minute WPM, 1x multiplier
+
+config ZMK_STATUS_ADV_WPM_DECAY_TIMEOUT_SECONDS
+    int "WPM decay timeout in seconds"
+    range 0 300
+    default 0
+    depends on ZMK_STATUS_ADVERTISEMENT
+    help
+      Time after which WPM completely resets due to inactivity.
+      Set to 0 to auto-calculate as 2x the window size (recommended).
+      Manual values: 10-300 seconds for custom timeout behavior.
+      Default 0 = auto (60s for 30s window, 20s for 10s window, etc.)
+
+      Examples:
+      - 0: Auto-calculate (recommended) - 2x window size
+      - 30: Manual 30-second timeout
+      - 120: Manual 2-minute timeout
+
+# Alias for common typo - prevents build errors in external configs
+
+config ZMK_STATUS_ADV_WMP_DECAY_TIMEOUT_SECONDS
+    int "WPM decay timeout (DEPRECATED - use ZMK_STATUS_ADV_WPM_DECAY_TIMEOUT_SECONDS)"
+    range 0 300
+    default 0
+    depends on ZMK_STATUS_ADVERTISEMENT
+    help
+      DEPRECATED: This is a typo alias for ZMK_STATUS_ADV_WPM_DECAY_TIMEOUT_SECONDS.
+      Please use ZMK_STATUS_ADV_WPM_DECAY_TIMEOUT_SECONDS instead.
+
+      This setting handles the common typo (WMP instead of WPM) found in external
+      keyboard configurations to prevent build errors.
+
+      This alias will be removed in future versions. Please update your configuration
+      to use the correct setting name: ZMK_STATUS_ADV_WPM_DECAY_TIMEOUT_SECONDS

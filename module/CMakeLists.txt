@@ -7,12 +7,6 @@ if(CONFIG_ZMK_SPLIT AND NOT CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   return()
 endif()
 
-set(upstream_root "${ZEPHYR_PROSPECTOR_ZMK_MODULE_MODULE_DIR}")
-set(upstream_source "${upstream_root}/src/status_advertisement.c")
-if(NOT EXISTS "${upstream_source}")
-  message(FATAL_ERROR "ZMK Satellite: add 'import: module/west.yml' to its west project entry")
-endif()
-
 set(resolved_side "${CONFIG_ZMK_STATUS_ADV_CENTRAL_SIDE}")
 if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   if(CONFIG_ZMK_SATELLITE_CENTRAL_SIDE STREQUAL "AUTO")
@@ -40,37 +34,36 @@ if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   endif()
 endif()
 
-file(READ "${upstream_source}" sender_source)
-string(REGEX MATCH "static const struct bt_le_adv_param prospector_adv_params = \\{[^}]*\\};" own_params "${sender_source}")
-if(NOT own_params)
-  message(FATAL_ERROR "ZMK Satellite: unsupported Prospector sender layout; use the pinned module revision")
+# These API options are enum constants, not preprocessor macros.
+# Probe the actual Zephyr header; no upstream code generation or patching.
+set(bluetooth_header "${ZEPHYR_BASE}/include/zephyr/bluetooth/bluetooth.h")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${bluetooth_header}")
+file(READ "${bluetooth_header}" bluetooth_api)
+foreach(option FORCE_NAME_IN_AD SCANNABLE)
+  if(bluetooth_api MATCHES "BT_LE_ADV_OPT_${option}[ \t\r\n]*=" OR
+     bluetooth_api MATCHES "#[ \t]*define[ \t]+BT_LE_ADV_OPT_${option}([ \t(]|$)")
+    set(has_option 1)
+  else()
+    set(has_option 0)
+  endif()
+  target_compile_definitions(app PRIVATE SATELLITE_HAS_${option}=${has_option})
+endforeach()
+if(CONFIG_ZMK_SATELLITE_ADV_INTERVAL_MS EQUAL 100)
+  set(status_adv_min 160)
+  set(status_adv_max 240)
+else()
+  math(EXPR status_adv_min "${CONFIG_ZMK_SATELLITE_ADV_INTERVAL_MS} * 8 / 5")
+  set(status_adv_max ${status_adv_min})
 endif()
-# Preserve all default radio parameters, including PC reconnect and split discovery.
-if(NOT CONFIG_ZMK_SATELLITE_ADV_INTERVAL_MS EQUAL 100)
-  math(EXPR interval_units "${CONFIG_ZMK_SATELLITE_ADV_INTERVAL_MS} * 8 / 5")
-  string(REPLACE "BT_GAP_ADV_FAST_INT_MIN_2" "${interval_units}" adjusted_params "${own_params}")
-  string(REPLACE "BT_GAP_ADV_FAST_INT_MAX_2" "${interval_units}" adjusted_params "${adjusted_params}")
-  string(REPLACE "${own_params}" "${adjusted_params}" sender_source "${sender_source}")
-endif()
-# Upstream idle name interval 1 permanently replaces manufacturer status with a
-# name-only AD. Alternate name/status at idle so a 95s receiver timeout stays live.
-if(NOT sender_source MATCHES "#define NAME_ADV_INTERVAL_IDLE +1 +//")
-  message(FATAL_ERROR "ZMK Satellite: review upstream idle-name behavior before updating the pinned revision")
-endif()
-string(REGEX REPLACE "#define NAME_ADV_INTERVAL_IDLE +1 +//[^\n]*"
-       "#define NAME_ADV_INTERVAL_IDLE 2 /* Alternate name/status at idle. */"
-       sender_source "${sender_source}")
-
-set(generated_source "${CMAKE_CURRENT_BINARY_DIR}/prospector_status_advertisement.c")
-file(WRITE "${generated_source}" "/* Generated from pinned Prospector v2.2.3; local interval/idle-name adaptations. */\n${sender_source}")
-set_source_files_properties("${upstream_source}" TARGET_DIRECTORY app PROPERTIES HEADER_FILE_ONLY ON)
+target_include_directories(app PRIVATE "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_LIST_DIR}/include")
+target_compile_definitions(app PRIVATE
+  ZMK_SATELLITE_ADV_MIN=${status_adv_min} ZMK_SATELLITE_ADV_MAX=${status_adv_max})
 target_sources(app PRIVATE "${CMAKE_CURRENT_LIST_DIR}/sender.c")
 target_compile_definitions(app PRIVATE
-  ZMK_SATELLITE_UPSTREAM_SOURCE="${generated_source}"
   ZMK_SATELLITE_RESOLVED_SIDE="${resolved_side}")
 if(CONFIG_ZMK_SATELLITE_ADV_INTERVAL_MS EQUAL 100)
   set(radio_description "100-150ms (Prospector default)")
 else()
   set(radio_description "${CONFIG_ZMK_SATELLITE_ADV_INTERVAL_MS}ms (own status only)")
 endif()
-message(STATUS "ZMK Satellite: Prospector sender, central=${resolved_side}, radio=${radio_description}")
+message(STATUS "ZMK Satellite: bundled sender, central=${resolved_side}, radio=${radio_description}")
