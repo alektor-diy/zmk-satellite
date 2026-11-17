@@ -56,7 +56,7 @@ CONFIG_ZMK_SATELLITE=y
 ### 3. 状態を表示する
 書き込み後、表示機に情報が表示されることを確認します。  
 
-対応ZMKでStudioのBLE接続用にUnlockしている間は、Studioの広告を優先してSatelliteの状態送信を一時停止します。再ロック・ロックのタイムアウト後に自動再開します。停止が約95秒続くと表示器は `SIGNAL LOST` になります。
+DYA Studioを使うためにStudio Lockを解除すると、Studioの広告を優先してSatelliteの状態送信を停止します。現状はDYA Studioを切断しても送信が復旧しないため、利用後にSatelliteの表示を再開するには**キーボードを再起動してください**。送信停止が約95秒続くと、表示器は `SIGNAL LOST` になります。
 
 なおZMK SATELLITEを有効化したキーボードで新規にデバイスとペアリングする際、候補にキーボードが表示されない場合があります。  
 この場合は接続先機器のBluetoothを一度OFFにしてから、再度ONにしてください。
