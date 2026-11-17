@@ -5,8 +5,11 @@
 #include <errno.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
+#include <zephyr/logging/log.h>
 #include <lvgl.h>
 #include <lvgl_zephyr.h>
+
+LOG_MODULE_REGISTER(sat_ui, LOG_LEVEL_INF);
 
 #define INK 0xe8eff3
 #define DIM 0x9aafbb
@@ -17,6 +20,22 @@
 static lv_obj_t *name, *status, *layer_number, *host, *host_icon, *endpoint_row;
 static lv_obj_t *battery[2], *unit[2], *ring[2], *battery_caption[2];
 static int battery_layout = -1;
+static bool display_on = true;
+
+static void set_display_on(bool on)
+{
+    if (display_on == on) return;
+    const struct device *dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
+    /* Flush fresh values while blanked, before exposing the screen again. */
+    if (on) lv_refr_now(NULL);
+    int ret = on ? display_blanking_off(dev) : display_blanking_on(dev);
+    if (ret) {
+        LOG_WRN("Display %s failed: %d", on ? "on" : "off", ret);
+        return; /* Retry on the next UI update; never change the BLE scanner. */
+    }
+    display_on = on;
+    LOG_INF("Display %s", on ? "on" : "off");
+}
 
 static lv_obj_t *label(lv_obj_t *parent, const char *text, int x, int y, int w,
                        const lv_font_t *font, uint32_t color)
@@ -141,10 +160,15 @@ int sat_ui_init(void)
 
 void sat_ui_update(const struct sat_state *s, int64_t now)
 {
+    if (!sat_display_awake(s, now, CONFIG_SATELLITE_DISPLAY_OFF_TIMEOUT_MS)) {
+        sat_indicator_receiving(false);
+        set_display_on(false);
+        return;
+    }
     const char *title = CONFIG_SATELLITE_KEYBOARD_NAME[0] ?
         CONFIG_SATELLITE_KEYBOARD_NAME : s->keyboard_name[0] ? s->keyboard_name : "Keyboard";
     lv_label_set_text(name, title);
-    if (!s->seen) { sat_indicator_receiving(false); return; }
+    if (!s->seen) { sat_indicator_receiving(false); set_display_on(true); return; }
     const bool standalone = s->packet.role == 0;
     set_battery_layout(standalone);
     bool online = sat_online(s, now, CONFIG_SATELLITE_TIMEOUT_MS);
@@ -187,6 +211,7 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
     snprintf(text, sizeof(text), "%02u", s->packet.layer);
     lv_label_set_text(layer_number, text);
     lv_obj_set_style_text_color(layer_number, lv_color_hex(online ? INK : DIM), 0);
+    set_display_on(true);
 }
 
 void sat_ui_error(const char *message)
@@ -194,5 +219,6 @@ void sat_ui_error(const char *message)
     sat_indicator_receiving(false);
     lv_label_set_text(status, message);
     lv_obj_set_style_text_color(status, lv_color_hex(WARN), 0);
+    set_display_on(true);
 }
 void sat_ui_tick(void) { lv_timer_handler(); }

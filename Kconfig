@@ -35,6 +35,12 @@ config SATELLITE_KEYBOARD_NAME
       Set this only for a local display alias; it does not change the keyboard.
 
 config SATELLITE_TIMEOUT_MS
-    int "Advertisement silence timeout (must exceed keyboard idle interval)"
+    int "State advertisement timeout for connection status (ms)"
     range 1000 3600000
-    default 95000
+    default 40000
+
+config SATELLITE_DISPLAY_OFF_TIMEOUT_MS
+    int "State advertisement timeout for display off (ms)"
+    depends on SATELLITE_DISPLAY
+    range 1000 3600000
+    default 600000
