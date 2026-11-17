@@ -66,6 +66,8 @@ static int satellite_stop_own(void)
 
 static int satellite_advertise(bool split_ready)
 {
+    /* Never piggyback, update names, or start a proxy over Studio's AD/SD. */
+    if (satellite_studio_unlocked()) return 0;
     bool connected = zmk_ble_active_profile_is_connected();
     bool connectable = split_ready && !connected;
     int err;

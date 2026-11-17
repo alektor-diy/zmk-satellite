@@ -56,11 +56,26 @@ static bool adv_started=true, prospector_adv_active, prospector_adv_connectable,
 static bool is_active=true;
 static uint8_t manufacturer_data[26];
 static int burst_remaining;
+#define ATOMIC_INIT(x) (x)
+typedef int atomic_t;
 static int atomic_get(int *p) {return *p;}
+#if SATELLITE_STUDIO_BLE
+static void atomic_set(int *p,int v) {*p=v;}
+#endif
 static void atomic_dec(int *p) {--*p;}
 static bool zmk_ble_active_profile_is_connected(void) {return connected;}
 static struct {bool exists, running; uint32_t options; uint8_t ad[31],sd[31]; size_t an,sn;} ctl;
 static int update_error, start_error, stop_error, start_calls, stop_calls;
+static int update_calls;
+enum zmk_studio_core_lock_state {
+    ZMK_STUDIO_CORE_LOCK_STATE_LOCKED, ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED
+};
+static enum zmk_studio_core_lock_state studio_state;
+static enum zmk_studio_core_lock_state zmk_studio_core_get_lock_state(void) {return studio_state;}
+static bool studio_directed;
+static bool zmk_tracks_connection_ad;
+static int studio_requests;
+static int zmk_ble_set_directed_advertising(bool enable);
 static const char *device_name="iOra";
 
 static bool has_name(const struct bt_data *d,size_t n)
@@ -95,6 +110,7 @@ static int write_data(const struct bt_data *a,size_t an,const struct bt_data *s,
 }
 static int bt_le_adv_update_data(const struct bt_data *a,size_t an,const struct bt_data *s,size_t sn)
 {
+    update_calls++;
     if(update_error){int e=update_error;update_error=0;return e;}
     if(!ctl.exists)return -EINVAL;
     if(!ctl.running)return -EAGAIN;
@@ -114,6 +130,7 @@ static int bt_le_adv_stop(void)
     if(stop_error){int e=stop_error;stop_error=0;return e;}
     ctl.exists=ctl.running=false;return 0;
 }
+static bool satellite_studio_unlocked(void);
 #include "advertising.inc"
 static const struct bt_le_adv_param burst_adv_params={.options=0,.interval_min=160,.interval_max=240};
 
@@ -131,6 +148,18 @@ static uint32_t k_uptime_get_32(void){return now;}
 static int k_work_schedule(struct k_work *w,int delay){(void)w;scheduled=delay;return 0;}
 static int k_work_reschedule(struct k_work *w,int delay){return k_work_schedule(w,delay);}
 static int k_work_cancel_delayable(struct k_work *w){(void)w;scheduled=-1;return 0;}
+
+#if SATELLITE_STUDIO_BLE
+struct zmk_studio_core_lock_state_changed {enum zmk_studio_core_lock_state state;};
+static const struct zmk_studio_core_lock_state_changed *as_zmk_studio_core_lock_state_changed(const zmk_event_t *e)
+{
+    static struct zmk_studio_core_lock_state_changed converted;
+    converted.state=(enum zmk_studio_core_lock_state)e->state;return &converted;
+}
+#endif
+#define ZMK_LISTENER(...)
+#define ZMK_SUBSCRIPTION(...)
+#include "studio.inc"
 enum {BT_CONN_ROLE_CENTRAL,BT_CONN_ROLE_PERIPHERAL};
 struct bt_conn {int role;};
 struct bt_conn_info {int role;};
@@ -167,7 +196,11 @@ static void assert_pairing(void)
 static void reset(void)
 {
     memset(&ctl,0,sizeof(ctl));prospector_adv_active=prospector_adv_connectable=zmk_adv_was_active=false;
-    update_error=start_error=stop_error=start_calls=stop_calls=0;
+    update_error=start_error=stop_error=start_calls=stop_calls=update_calls=0;
+    studio_state=ZMK_STUDIO_CORE_LOCK_STATE_LOCKED;studio_directed=false;studio_requests=0;
+#if SATELLITE_STUDIO_BLE
+    studio_advertising_ready=false;
+#endif
     connected=false;split_ready=true;burst_remaining=0;adv_cycle_counter=0;
     scheduled=-1;now=0;is_active=true;last_activity_state=ZMK_ACTIVITY_ACTIVE;
     device_name="iOra";strcpy(name_adv_buffer,device_name);name_ad[1].data_len=4;
@@ -178,19 +211,20 @@ static void connect_host(void)
 {
     struct bt_conn c={BT_CONN_ROLE_PERIPHERAL};
     connected=true;ctl.running=ctl.exists=false;
+    zmk_tracks_connection_ad=false; /* ZMK's connected() resets advertising_status. */
     prospector_ble_connected(&c,0);
 }
 
 /* ZMK v0.3 update_advertising's NONE/CONN transitions. On -EALREADY it
  * deliberately keeps NONE; selecting an already tracked CONN does no HCI call.
  * Keep this model explicit: the actual ZMK application is checked by builds. */
-static bool zmk_tracks_connection_ad;
 static int zmk_update(void)
 {
-    if(connected&&zmk_tracks_connection_ad) {
+    bool wants_ad=!connected||studio_directed;
+    if(!wants_ad&&zmk_tracks_connection_ad) {
         int err=bt_le_adv_stop();zmk_tracks_connection_ad=false;return err;
     }
-    if(!connected&&!zmk_tracks_connection_ad) {
+    if(wants_ad&&!zmk_tracks_connection_ad) {
         const struct bt_le_adv_param params={
             .options=BT_LE_ADV_OPT_CONNECTABLE|BT_LE_ADV_OPT_ONE_TIME|BT_LE_ADV_OPT_USE_NAME
 #if SATELLITE_HAS_FORCE_NAME_IN_AD
@@ -204,8 +238,95 @@ static int zmk_update(void)
     return 0;
 }
 
+/* Target cormoran ZMK calls this BEFORE raising the lock-state event. */
+static int zmk_ble_set_directed_advertising(bool enable)
+{
+    studio_requests++;studio_directed=enable;return zmk_update();
+}
+
+static void test_studio(void)
+{
+    reset();zmk_tracks_connection_ad=false;connected=true;tick();assert_status();
+    assert(zmk_ble_set_directed_advertising(true)==-EALREADY);
+    studio_state=ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED;
+#if SATELLITE_STUDIO_BLE
+    zmk_event_t event={(enum zmk_activity_state)studio_state};
+    satellite_studio_listener(&event);
+#endif
+    assert(zmk_studio_core_get_lock_state()==ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED);
+    tick();
+#if SATELLITE_STUDIO_BLE
+    assert(!prospector_adv_active&&zmk_tracks_connection_ad);
+    assert(ctl.options&BT_LE_ADV_OPT_CONNECTABLE);
+    assert(studio_requests==2); /* Failed before event, retried after release. */
+    assert(!present(BT_DATA_MANUFACTURER_DATA,ctl.ad,ctl.an));
+    assert(!present(BT_DATA_MANUFACTURER_DATA,ctl.sd,ctl.sn));
+    size_t uuid_len=0;const uint8_t *uuids=field(BT_DATA_UUID16_SOME,ctl.ad,ctl.an,&uuid_len);
+    assert(uuids&&uuid_len==4&&uuids[2]==0x0f&&uuids[3]==0x18); /* BAS discovery */
+    assert(present(BT_DATA_NAME_COMPLETE,ctl.ad,ctl.an)||present(BT_DATA_NAME_COMPLETE,ctl.sd,ctl.sn));
+    uint8_t ad[31],sd[31];size_t an=ctl.an,sn=ctl.sn;
+    memcpy(ad,ctl.ad,an);memcpy(sd,ctl.sd,sn);
+    int updates=update_calls,starts=start_calls,stops=stop_calls,requests=studio_requests;
+    struct bt_conn peer={BT_CONN_ROLE_CENTRAL};
+    /* Key/layer/battery/API updates all feed adv_work. Also test callbacks,
+     * burst/name intervals and partial-split windows while Studio owns AD. */
+    for(int i=0;i<60;i++) {
+        burst_remaining=5;is_active=i%2;split_ready=i%3;
+        now=(uint32_t)i*1000;
+        prospector_ble_connected(&peer,0);
+        if(i%5==0)prospector_ble_disconnected(&peer,0);
+        tick();
+        assert(satellite_advertise(split_ready)==0); /* direct transport guard */
+        assert(update_calls==updates&&start_calls==starts&&stop_calls==stops);
+        assert(studio_requests==requests);
+        assert(ctl.an==an&&ctl.sn==sn&&!memcmp(ad,ctl.ad,an)&&!memcmp(sd,ctl.sd,sn));
+    }
+    /* Sleep/wake must not stop or overwrite ZMK's Studio set. */
+    zmk_event_t activity={ZMK_ACTIVITY_SLEEP};activity_state_listener(&activity);tick();
+    activity.state=ZMK_ACTIVITY_ACTIVE;activity_state_listener(&activity);tick();
+    assert(update_calls==updates&&start_calls==starts&&stop_calls==stops);
+
+    /* Explicit lock and the idle-timeout callback use the same ZMK lock path. */
+    assert(zmk_ble_set_directed_advertising(false)==0);
+    studio_state=ZMK_STUDIO_CORE_LOCK_STATE_LOCKED;
+    event.state=(enum zmk_activity_state)studio_state;satellite_studio_listener(&event);
+    split_ready=true;now=0;tick();assert_status();assert(prospector_adv_active);
+
+    /* An initial stop failure must retain ownership, then retry safely. */
+    assert(zmk_ble_set_directed_advertising(true)==-EALREADY);
+    studio_state=ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED;
+    event.state=(enum zmk_activity_state)studio_state;satellite_studio_listener(&event);
+    stop_error=-EIO;tick();assert(prospector_adv_active&&scheduled==250);
+    start_error=-ENOMEM;tick();assert(!prospector_adv_active&&scheduled==250);
+    tick();assert(zmk_tracks_connection_ad&&ctl.running);
+
+    /* Disconnect/reconnect while unlocked is ZMK-owned throughout. */
+    struct bt_conn host={BT_CONN_ROLE_PERIPHERAL};
+    connected=false;prospector_ble_disconnected(&host,0);assert(zmk_update()==0);tick();
+    connect_host();assert(zmk_update()==0);
+    updates=update_calls;tick();assert(update_calls==updates&&!prospector_adv_active);
+    assert(ctl.running&&(ctl.options&BT_LE_ADV_OPT_CONNECTABLE));
+
+    /* ZMK may succeed before the event when there was no Satellite set. */
+    reset();zmk_tracks_connection_ad=false;connected=true;
+    assert(zmk_ble_set_directed_advertising(true)==0);
+    studio_state=ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED;
+    event.state=(enum zmk_activity_state)studio_state;satellite_studio_listener(&event);
+    stops=stop_calls;updates=update_calls;tick();
+    assert(stop_calls==stops&&update_calls==updates&&zmk_tracks_connection_ad);
+
+    /* Already unlocked at boot: query the core state without needing an event. */
+    reset();zmk_tracks_connection_ad=false;connected=true;
+    studio_state=ZMK_STUDIO_CORE_LOCK_STATE_UNLOCKED;tick();
+    assert(zmk_tracks_connection_ad&&!prospector_adv_active);
+#else
+    assert(prospector_adv_active&&!zmk_tracks_connection_ad);
+#endif
+}
+
 int main(void)
 {
+    test_studio();
     /* Startup: piggyback on the actual ZMK-style auto-name options. */
     reset();ctl.exists=ctl.running=true;
     ctl.options=BT_LE_ADV_OPT_CONNECTABLE|BT_LE_ADV_OPT_ONE_TIME|BT_LE_ADV_OPT_USE_NAME;

@@ -43,6 +43,13 @@ static int satellite_stop_own(void);
 #include <zmk/events/activity_state_changed.h>
 #include <zmk/activity.h>
 
+/* Older ZMK releases have Studio but not the unlock advertising API. */
+#define SATELLITE_STUDIO_BLE (IS_ENABLED(CONFIG_ZMK_STUDIO_TRANSPORT_BLE) && \
+    IS_ENABLED(CONFIG_ZMK_STUDIO_LOCK_BLE_DIRECT_ADVERTISING_ON_UNLOCK))
+#if SATELLITE_STUDIO_BLE
+#include <zmk/studio/core.h>
+#endif
+
 // keymap API is available on Central or Standalone (non-Split) builds only
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
 #include <zmk/keymap.h>
@@ -392,7 +399,9 @@ static struct zmk_status_adv_data manufacturer_data; // Use structured data dire
 //   - Stopped immediately on disconnect (bt_conn_cb) before ZMK restarts
 // =====================================================================
 
+static bool satellite_studio_unlocked(void);
 #include "advertising.inc"
+#include "studio.inc"
 
 // Burst-window ADV params: used during the BURST phase of the burst/silent
 // cycle that runs while the split central is still bringing up peripherals.
@@ -872,6 +881,7 @@ static void build_manufacturer_payload(void) {
 
 static void adv_work_handler(struct k_work *work) {
     if (last_activity_state == ZMK_ACTIVITY_SLEEP) return;
+    if (satellite_yield_to_studio()) return;
 #if IS_ENABLED(CONFIG_ZMK_SPLIT) && !IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     // Peripheral: don't interfere with split communication
     return;

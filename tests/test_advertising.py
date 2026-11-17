@@ -27,12 +27,13 @@ def main():
         callbacks+=section('static void prospector_ble_connected(', '\nstatic struct bt_conn_cb prospector_conn_callbacks')
         callbacks+=section('static void adv_work_handler(', '\nstatic int init_prospector_status(')
         (tmp/'generated_callbacks.inc').write_text(callbacks,encoding='utf-8')
-        for capability in [0,1]:
-            binary=tmp/f'test-{capability}'
+        for capability, studio in [(c,s) for c in [0,1] for s in [0,1]]:
+            binary=tmp/f'test-{capability}-{studio}'
             flags=['-fsanitize=address,undefined','-fno-omit-frame-pointer'] if args.sanitize else []
             subprocess.run([args.cc,'-std=c11','-Wall','-Wextra','-Werror','-Wno-unused-parameter',
                             *flags,f'-DSATELLITE_HAS_FORCE_NAME_IN_AD={capability}',
                             f'-DSATELLITE_HAS_SCANNABLE={capability}',
+                            f'-DSATELLITE_STUDIO_BLE={studio}',
                             '-I'+str(root/'module'),'-I'+str(tmp),str(root/'tests/test_advertising.c'),
                             '-o',str(binary)],check=True)
             subprocess.run([str(binary)],check=True)
