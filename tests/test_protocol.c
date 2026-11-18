@@ -84,13 +84,34 @@ int main(void)
     assert(!sat_parse_id("xyz", id) && !sat_parse_id("1234567g", id));
     struct sat_state s = {0};
     assert(!sat_online(&s, 0, 100));
+    assert(sat_display_awake(&s, 0, 100));
+    assert(sat_display_awake(&s, 99, 100));
+    assert(!sat_display_awake(&s, 100, 100)); /* never received: boot timeout */
     assert(!sat_update(&s, &p, -50, 100, 4, NULL));
     assert(sat_update(&s, &p, -50, 100, 3, id));
     assert(sat_online(&s, 199, 100) && !sat_online(&s, 200, 100));
+    assert(sat_display_awake(&s, 199, 100) && !sat_display_awake(&s, 200, 100));
     q = p; q.id[0]++;
     assert(!sat_update(&s, &q, -10, 300, 0, NULL));
+    assert(!sat_display_awake(&s, 300, 100) && s.last_seen == 100);
     assert(sat_update(&s, &p, -60, 400, 0, NULL)); /* reacquire same ID */
     assert(sat_online(&s, 400, 100) && s.rssi == -60);
+    assert(sat_display_awake(&s, 400, 100)); /* same ID wakes without reboot */
+    assert(sat_online(&s, 40399, 40000) && !sat_online(&s, 40400, 40000));
+    assert(sat_display_awake(&s, 600399, 600000));
+    assert(!sat_display_awake(&s, 600400, 600000));
+    struct sat_state boot = {0};
+    assert(sat_display_awake(&boot, 599999, 600000));
+    assert(!sat_display_awake(&boot, 600000, 600000));
+    assert(sat_update(&boot, &p, -50, 600001, 0, NULL));
+    assert(sat_online(&boot, 600001, 40000));
+    assert(sat_display_awake(&boot, 600001, 600000));
+    /* Idle keyboard advertisements keep the screen awake, even over 24 hours. */
+    for (int64_t t = 30000; t <= 86400000; t += 30000) {
+        assert(sat_update(&s, &p, -60, t, 0, NULL));
+        assert(sat_display_awake(&s, t + 29999, 600000));
+    }
+    assert(!sat_display_awake(&s, 87000000, 600000));
     /* Deterministic malformed AD smoke test for sanitizer/host runs. */
     uint32_t rng = 12345;
     for (unsigned j = 0; j < 100000; ++j) {

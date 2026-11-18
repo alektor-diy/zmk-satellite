@@ -86,6 +86,8 @@ int main(void)
         if (now % 25000 < 15000)
             sat_update(&state, &p, -48, now, 0, NULL);
 #endif
+        /* A scan callback may enqueue a packet after the loop's first timestamp. */
+        now = k_uptime_get();
         if (now >= next_update && !fatal) {
             bool online = sat_online(&state, now, CONFIG_SATELLITE_TIMEOUT_MS);
             if (was_online && !online) LOG_WRN("Advertisement timeout; values are stale");

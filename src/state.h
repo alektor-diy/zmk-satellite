@@ -9,6 +9,8 @@ struct sat_state {
     char keyboard_name[SAT_NAME_SIZE];
 };
 bool sat_online(const struct sat_state *s, int64_t now, int64_t timeout);
+/* Show WAITING for one timeout after boot, then wake only for the selected ID. */
+bool sat_display_awake(const struct sat_state *s, int64_t now, int64_t timeout);
 /* First ID stays selected, including after timeout. No mixing adjacent keyboards. */
 bool sat_update(struct sat_state *s, const struct sat_packet *p, int8_t rssi,
                 int64_t now, uint8_t channel, const uint8_t *filter_id);
