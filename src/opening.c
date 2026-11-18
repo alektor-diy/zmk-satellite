@@ -11,6 +11,7 @@ static lv_obj_t *overlay, *content, *ship, *logo_top, *logo_bottom;
 static lv_timer_t *timer;
 static uint32_t started;
 static int32_t ship_width;
+static int32_t ship_offset_x, ship_offset_y;
 static int ship_angle;
 static lv_opa_t ship_opacity, background_opacity;
 
@@ -31,8 +32,8 @@ static void draw_ship(lv_event_t *event)
 {
     lv_area_t area;
     lv_obj_get_coords(ship, &area);
-    sat_indicator_draw(lv_event_get_layer(event), (area.x1 + area.x2 + 1) / 2,
-                        (area.y1 + area.y2 + 1) / 2, ship_width, ship_angle,
+    sat_indicator_draw(lv_event_get_layer(event), area.x1 + ship_offset_x,
+                        area.y1 + ship_offset_y, ship_width, ship_angle,
                         lv_color_hex(0x68bdd5), ship_opacity);
 }
 
@@ -65,12 +66,14 @@ static void frame(lv_timer_t *unused)
     ship_width = 7 + 150 * size / 256; /* 56px silhouette, max 2.8x. */
     int32_t cx = 120 - 100 * lv_trigo_sin(angle) / 32768 + 20 * (256 - depth) / 256;
     int32_t cy = 120 - 20 * (256 - depth) / 256;
-    /* Bound just the moving drawing, so each frame need not refresh 240x240. */
-    int32_t rx = (ship_width * 35 + 55) / 56 + 2;
-    int32_t ry = (ship_width * 29 + 55) / 56 + 2;
-    lv_obj_set_pos(ship, cx - rx, cy - ry);
-    lv_obj_set_size(ship, 2 * rx, 2 * ry);
     ship_angle = (388 - (int)(elapsed * 360 / WING_PERIOD_MS)) % 360;
+    lv_area_t bounds;
+    sat_indicator_bounds(&bounds, ship_width, ship_angle);
+    ship_offset_x = -bounds.x1;
+    ship_offset_y = -bounds.y1;
+    /* LVGL invalidates the old rectangle as well as the new one: no trails. */
+    lv_obj_set_pos(ship, cx + bounds.x1, cy + bounds.y1);
+    lv_obj_set_size(ship, bounds.x2 - bounds.x1 + 1, bounds.y2 - bounds.y1 + 1);
     ship_opacity = smooth(elapsed, 0, 229) *
                    (256 - smooth(elapsed, 2400, ORBIT_MS)) * 255 / 65536;
     lv_obj_invalidate(ship);
