@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 #include "ui.h"
 #include "satellite_indicator.h"
+#include "opening.h"
 #include <stdio.h>
 #include <errno.h>
 #include <zephyr/device.h>
@@ -114,6 +115,12 @@ int sat_ui_init(void)
     lv_obj_set_style_border_width(screen, 0, 0);
     lv_obj_set_style_pad_all(screen, 0, 0);
     lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
+    /* Keep live values updating behind the one-shot opening. */
+    lv_obj_t *background = screen;
+    screen = lv_obj_create(background);
+    lv_obj_remove_style_all(screen);
+    lv_obj_set_size(screen, 240, 240);
+    lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
     lv_obj_t *brand = label(screen, "ZMK SATELLITE", 14, 14, 212,
                             &lv_font_montserrat_10, DIM);
     lv_obj_set_style_text_letter_space(brand, 1, 0);
@@ -154,6 +161,7 @@ int sat_ui_init(void)
     lv_obj_add_flag(host_icon, LV_OBJ_FLAG_HIDDEN);
     host = label(endpoint_row, "--", 0, 0, LV_SIZE_CONTENT,
                  &lv_font_montserrat_24, DIM);
+    sat_opening_start(background, screen);
     lv_timer_handler();
     return display_blanking_off(dev);
 }
@@ -216,6 +224,7 @@ void sat_ui_update(const struct sat_state *s, int64_t now)
 
 void sat_ui_error(const char *message)
 {
+    sat_opening_cancel(); /* Errors must not be hidden behind the opening. */
     sat_indicator_receiving(false);
     lv_label_set_text(status, message);
     lv_obj_set_style_text_color(status, lv_color_hex(WARN), 0);

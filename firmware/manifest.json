@@ -2,11 +2,11 @@
   {
     "stage": "display",
     "file": "satellite_demo.uf2",
-    "bytes": 986112,
-    "sha256": "369f8c54381a3ed0be8c5d10cf4deb53ed08a446fddf918809c443fc28a226c5",
-    "flash": 492852,
-    "ram": 71552,
-    "blocks": 1926,
+    "bytes": 1064960,
+    "sha256": "97601b4aa97c5ae50d7ea6a45ff3cc99978301ffe43074a788cb740adc4b054d",
+    "flash": 532256,
+    "ram": 71808,
+    "blocks": 2080,
     "start": "0x27000",
     "family": "0xADA52840",
     "spi_mode": 3,
@@ -19,7 +19,12 @@
     "battery_layout": "automatic-standalone-or-split",
     "display_idle_timeout_ms": 5000,
     "display_off_mode": "panel-blanking",
-    "backlight_control": false
+    "backlight_control": false,
+    "opening_duration_ms": 4000,
+    "opening_wing_period_ms": 2800,
+    "opening_frame_interval_ms": 100,
+    "indicator_fill": "triangles-with-supersampled-struts",
+    "opening_bounds": "projected-geometry"
   },
   {
     "stage": "ble",
@@ -35,11 +40,11 @@
   {
     "stage": "status",
     "file": "satellite.uf2",
-    "bytes": 1063936,
-    "sha256": "bbfa3858fb26d40998a826021ff597c6c999af358e7ae0fc441b44d7ee9ffcb0",
-    "flash": 531804,
-    "ram": 82668,
-    "blocks": 2078,
+    "bytes": 1142784,
+    "sha256": "b388e0a15eb01237380145e30a58353992175d85397aaa63dd7922daec2cbbe2",
+    "flash": 571204,
+    "ram": 82988,
+    "blocks": 2232,
     "start": "0x27000",
     "family": "0xADA52840",
     "spi_mode": 3,
@@ -52,6 +57,11 @@
     "battery_layout": "automatic-standalone-or-split",
     "display_idle_timeout_ms": 600000,
     "display_off_mode": "panel-blanking",
-    "backlight_control": false
+    "backlight_control": false,
+    "opening_duration_ms": 4000,
+    "opening_wing_period_ms": 2800,
+    "opening_frame_interval_ms": 100,
+    "indicator_fill": "triangles-with-supersampled-struts",
+    "opening_bounds": "projected-geometry"
   }
 ]
